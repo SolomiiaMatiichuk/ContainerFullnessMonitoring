@@ -1,5 +1,17 @@
 package com.example.myapplication.ui.home;
 
+
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.content.Context;
+import android.content.Intent;
+
+import android.os.Build;
+
+import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
+
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -37,9 +49,13 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+
+import android.content.SharedPreferences;
 
 import okhttp3.OkHttpClient;
 
@@ -85,6 +101,9 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
 
     private double current_container_length;
 
+    private static final String CHANNEL_ID = "container_notifications";
+    private static final int NOTIFICATION_ID = 1;
+
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.fragment_home, container, false);
@@ -95,6 +114,8 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
         SupportMapFragment mapFragment = (SupportMapFragment) getChildFragmentManager()
                 .findFragmentById(R.id.maps1);
         mapFragment.getMapAsync(this);
+
+        createNotificationChannel();
 
         return rootView;
     }
@@ -198,6 +219,12 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
             iconResource = R.drawable.yellow;
         } else {
             iconResource = R.drawable.red;
+
+            // Check notification setting and send notification
+
+            if (isNotificationsEnabled(getContext())) {
+                sendNotification("Контейнер  " + marker.getTitle() + " є на " + (int)fullness + "% заповнений");
+            }
         }
 
         Bitmap originalBitmap = BitmapFactory.decodeResource(getResources(), iconResource);
@@ -205,6 +232,49 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
         int height = 100; // Specify your desired height
         Bitmap resizedBitmap = Bitmap.createScaledBitmap(originalBitmap, width, height, false);
         marker.setIcon(BitmapDescriptorFactory.fromBitmap(resizedBitmap));
+    }
+
+    private boolean isNotificationsEnabled(Context context) {
+        SharedPreferences sharedPreferences = context.getSharedPreferences("Settings", Context.MODE_PRIVATE);
+        return sharedPreferences.getBoolean("notifications_enabled", false);
+
+    }
+
+
+
+    private void sendNotification(String message) {
+        Intent intent = new Intent(getContext(), getActivity().getClass());
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        // Replace your PendingIntent creation code with this
+        PendingIntent pendingIntent = PendingIntent.getActivity(getContext(), 0, intent, PendingIntent.FLAG_IMMUTABLE);
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(getContext(), CHANNEL_ID)
+                .setSmallIcon(R.drawable.red)
+                .setContentTitle("Контейнер майже заповнився")
+                .setContentText(message)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setContentIntent(pendingIntent)
+                .setAutoCancel(true);
+
+        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(getContext());
+        notificationManager.notify(NOTIFICATION_ID, builder.build());
+
+    }
+
+
+
+    private void createNotificationChannel() {
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            CharSequence name = "Container Notifications";
+            String description = "Notifications for container fullness";
+            int importance = NotificationManager.IMPORTANCE_HIGH;
+            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, name, importance);
+            channel.setDescription(description);
+            NotificationManager notificationManager = getContext().getSystemService(NotificationManager.class);
+            notificationManager.createNotificationChannel(channel);
+
+        }
+
     }
 
 
@@ -325,9 +395,17 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
 
             for (Fullness data : dateFullness) {
                 // Normalize timestamp to minutes of the day
-                long minutes = (data.getTimestamp().getHours() * 60 + data.getTimestamp().getMinutes());
-                entries.add(new Entry((minutes), (int) (((current_container_length - data.getFullness()) / current_container_length) * 100.0)));
+                long minutes = (data.getTimestamp().getHours() * 60 + data.getTimestamp().getMinutes()) % 1440;
+                entries.add(new Entry((minutes), (float) (((current_container_length - data.getFullness()) / current_container_length) * 100.0)));
             }
+
+            // Sort entries by minutes value
+            Collections.sort(entries, new Comparator<Entry>() {
+                @Override
+                public int compare(Entry entry1, Entry entry2) {
+                    return Float.compare(entry1.getX(), entry2.getX());
+                }
+            });
         }
 
 
@@ -355,9 +433,6 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
         chart.getAxisLeft().setGranularity(1);
 
         chart.getAxisRight().setEnabled(false);
-
-        //chart.getLayoutParams().height = ViewGroup.LayoutParams.MATCH_PARENT;
-        //chart.getLayoutParams().width = ViewGroup.LayoutParams.MATCH_PARENT;
 
         chart.invalidate(); // refresh
     }

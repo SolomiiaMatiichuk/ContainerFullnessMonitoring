@@ -1,8 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical">
+
+    <TextView
+        android:id="@+id/search_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Пошук моніторингових пристроїв ..."
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="20dp"
+        android:layout_marginLeft="16dp"
+/>
 
     <ListView
         android:id="@+id/discovered_devices_list"
@@ -10,38 +24,147 @@
         android:layout_height="wrap_content"
         android:layout_weight="1" />
 
-    <EditText
-        android:id="@+id/ssid_edit_text"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="SSID" />
-
-    <EditText
-        android:id="@+id/password_edit_text"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Password"
-        android:inputType="textPassword" />
-
     <Button
         android:id="@+id/send_wifi_data_button"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Send Wi-Fi Data"
-        android:enabled="false" />
+        android:text="Надіслати дані Wi-Fi"
+        android:backgroundTint="#FF018786"
+        android:enabled="false"
+        android:visibility="gone"/>
 
     <Button
         android:id="@+id/send_gps_data_button"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Send GPS Data"
-        android:enabled="false" />
+        android:text="Надіслати геолокацію"
+        android:backgroundTint="#FF018786"
+        android:enabled="false"
+        android:visibility="gone"/>
+
+    <Button
+        android:id="@+id/calibrate"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Відкалібрувати"
+        android:backgroundTint="#FF018786"
+        android:enabled="false"
+        android:visibility="gone"/>
+
+    <Button
+        android:id="@+id/send_user_id"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Надіслати ID користувача"
+        android:backgroundTint="#FF018786"
+        android:enabled="false"
+        android:visibility="gone"/>
 
     <Button
         android:id="@+id/disconnect_button"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Disconnect"
-        android:enabled="false" />
+        android:text="Від'єднатися"
+        android:backgroundTint="#FF018786"
+        android:enabled="false"
+        android:visibility="gone"/>
+
+    <!-- Title for Bluetooth Config -->
+    <TextView
+        android:id="@+id/config_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Конфігураційні дані з пристрою"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:layout_marginTop="16dp"
+        android:visibility="gone"/>
+
+
+
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/card_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        app:cardCornerRadius="8dp"
+        app:cardElevation="4dp"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                android:id="@+id/wifi_config_textview"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="WiFi сконфігуровано:"
+                android:textSize="16sp"
+                android:textColor="#FFFFFF"
+                android:padding="8dp" />
+
+            <TextView
+                android:id="@+id/gps_config_textview"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="GPS сконфігуровано:"
+                android:textSize="16sp"
+                android:textColor="#FFFFFF"
+                android:padding="8dp" />
+
+            <TextView
+                android:id="@+id/current_length_textview"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Поточна відстань:"
+                android:textSize="16sp"
+                android:textColor="#FFFFFF"
+                android:padding="8dp" />
+
+            <TextView
+                android:id="@+id/user_id_textview"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="ID користувача:"
+                android:textSize="16sp"
+                android:textColor="#FFFFFF"
+                android:padding="8dp" />
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
+
+    <!-- Title for Bluetooth Terminal -->
+    <TextView
+        android:id="@+id/title_terminal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Термінал Bluetooth"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:layout_marginTop="16dp"
+        android:visibility="gone"/>
+
+    <!-- Bluetooth Terminal Content -->
+    <ScrollView
+        android:id="@+id/scroll_view"
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
+        android:background="#000080"
+        android:padding="8dp"
+        android:layout_marginTop="8dp"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/bluetooth_response_textview"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="8dp"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp" />
+    </ScrollView>
+
 
 </LinearLayout>

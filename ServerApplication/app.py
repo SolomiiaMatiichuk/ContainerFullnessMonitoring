@@ -72,6 +72,8 @@ def receive_data():
     else:
         # update latest_distance for existing container
         container.latest_distance = distance
+        container.length = container_length
+        container.user_id = user_id
         db.session.commit()
 
     fullness_data = FullnessData(container_id=container_id, fullness=distance, timestamp=timestamp)

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:id="@+id/current_length_text_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Очікуємо дані про поточну відстань...."
+        android:textSize="16sp"
+        android:paddingBottom="8dp" />
+
+    <Button
+        android:id="@+id/update_length_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Оновити" />
+
+    <Button
+        android:id="@+id/confirm_length_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Підтвердити"
+        android:layout_marginTop="8dp" />
+</LinearLayout>
