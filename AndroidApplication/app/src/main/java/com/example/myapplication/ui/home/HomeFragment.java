@@ -1,6 +1,7 @@
 package com.example.myapplication.ui.home;
 
 
+import android.app.AlertDialog;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -193,7 +194,7 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
         // Add new markers
         for (Container container : containerList) {
             LatLng latLng = new LatLng(container.getLatitude(), container.getLongitude());
-            Marker marker = mMap.addMarker(new MarkerOptions().position(latLng).title(container.getName()).snippet("ID: " + container.getId() + ",Length: " + container.getLength()));
+            Marker marker = mMap.addMarker(new MarkerOptions().position(latLng).title(container.getName()).snippet("ID: " + container.getId() + ",Length: " + container.getLength() + ",LatestDistance: " + container.getLatestDistance()));
             setMarkerColor(marker, container.getLatestDistance(), container.getLength());
             markers.add(marker);
         }
@@ -222,9 +223,9 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
 
             // Check notification setting and send notification
 
-            if (isNotificationsEnabled(getContext())) {
-                sendNotification("Контейнер  " + marker.getTitle() + " є на " + (int)fullness + "% заповнений");
-            }
+           // if (isNotificationsEnabled(getContext())) {
+           //     sendNotification("Контейнер  " + marker.getTitle() + " є на " + (int)fullness + "% заповнений");
+           // }
         }
 
         Bitmap originalBitmap = BitmapFactory.decodeResource(getResources(), iconResource);
@@ -286,6 +287,29 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
         return false;
     }
 
+    private void showInfoPopup(int containerId, double containerLength, double latestDistance) {
+        LayoutInflater inflater = getLayoutInflater();
+        View alertLayout = inflater.inflate(R.layout.popup_info, null);
+
+        TextView textId = alertLayout.findViewById(R.id.text_id);
+        TextView textFullness = alertLayout.findViewById(R.id.fullness_info);
+        TextView textLength = alertLayout.findViewById(R.id.text_length);
+        TextView textLastDate = alertLayout.findViewById(R.id.text_last_date);
+
+        // Set your data here
+        textId.setText(Integer.toString(containerId));
+        textLength.setText(Double.toString(containerLength));
+        textFullness.setText(String.format("%.1f",((containerLength - latestDistance)/containerLength) *100.0) + "%");
+        textLastDate.setText("26.05.2024"); //currently test data
+
+        AlertDialog.Builder alert = new AlertDialog.Builder(getContext());
+        alert.setTitle("Інформація про контейнер");
+        alert.setView(alertLayout);
+        alert.setPositiveButton("OK", null);
+        AlertDialog dialog = alert.create();
+        dialog.show();
+    }
+
     private void showPopupWindow(Marker marker) {
         if (popupWindow != null && popupWindow.isShowing()) {
             popupWindow.dismiss();
@@ -308,6 +332,7 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
 
         int containerId = Integer.parseInt(marker.getSnippet().split(",")[0].split(": ")[1]);
         double containerLength = Double.parseDouble(marker.getSnippet().split(",")[1].split(": ")[1]);
+        double latestDistance = Double.parseDouble(marker.getSnippet().split(",")[2].split(": ")[1]);
         showFullnessPlot(containerId, containerLength);
 
         //fetchFullnessData(Integer.parseInt(marker.getTitle()), Double.parseDouble(marker.getSnippet()));
@@ -318,6 +343,13 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
         btnClose.setOnClickListener(view -> popupWindow.dismiss());
         btnPrevious.setOnClickListener(view -> navigateDate(btnNext, textview, -1));
         btnNext.setOnClickListener(view -> navigateDate(btnNext, textview, 1));
+
+        btnInfo.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showInfoPopup(containerId, containerLength, latestDistance);
+            }
+        });
 
         btnNext.setEnabled(false);
     }
