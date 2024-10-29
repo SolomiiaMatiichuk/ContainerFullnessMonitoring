@@ -1,11 +1,8 @@
 package com.example.myapplication;
 
-import static androidx.core.content.ContextCompat.getSystemService;
-
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
+import android.content.SharedPreferences;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.provider.Settings;
@@ -13,15 +10,11 @@ import android.view.View;
 import android.view.Menu;
 
 import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.model.BitmapDescriptor;
-import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.Marker;
-import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.navigation.NavigationView;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.annotation.NonNull;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
@@ -30,29 +23,19 @@ import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.myapplication.databinding.ActivityMainBinding;
-import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.OnMapReadyCallback;
-import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.MarkerOptions;
-import com.google.android.gms.maps.CameraUpdateFactory;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.InetAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import android.content.pm.PackageManager;
 import android.Manifest;
+import android.widget.TextView;
 import android.widget.Toast;
 
 public class MainActivity extends AppCompatActivity {
 
-    private GoogleMap mMap;
+    private NavigationView navigationView;
     private AppBarConfiguration mAppBarConfiguration;
     private ActivityMainBinding binding;
 
@@ -123,6 +106,24 @@ public class MainActivity extends AppCompatActivity {
 
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+
+        // Initialize NavigationView
+        navigationView = findViewById(R.id.nav_view);
+
+        // Get the header view from the navigation drawer
+        View headerView = navigationView.getHeaderView(0);
+
+        // Retrieve real name and email from SharedPreferences
+        SharedPreferences prefs = getSharedPreferences("MyAppPrefs", MODE_PRIVATE);
+        String realName = prefs.getString("real_name", "User Name");  // Default "User Name" if not found
+        String email = prefs.getString("email", "user@example.com");  // Default email if not found
+
+        // Find the TextViews in the header and set the real name and email
+        TextView realNameTextView = headerView.findViewById(R.id.navHeaderRealName);
+        TextView emailTextView = headerView.findViewById(R.id.navHeaderEmail);
+
+        realNameTextView.setText(realName);
+        emailTextView.setText(email);
 
        // SupportMapFragment mapFragment = (SupportMapFragment)getSupportFragmentManager().findFragmentById(R.id.maps);
 
