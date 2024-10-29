@@ -1,7 +1,9 @@
 from flask import Flask, jsonify, request
 from flask_sqlalchemy  import SQLAlchemy
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask_migrate import Migrate
+from flask_bcrypt import Bcrypt
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from sqlalchemy import desc
 import os
 
@@ -10,13 +12,20 @@ app = Flask(__name__)
 DATABASE_URL = os.environ['DATABASE_URL']
 DATABASE_URL = str(DATABASE_URL).replace("postgres://", "postgresql://", 1)
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
+app.config['SECRET_KEY'] = 'your_secret_key'
+app.config['JWT_SECRET_KEY'] = 'your_jwt_secret_key'  # Secret key for JWT
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=1)  # Token expiry time
 db = SQLAlchemy(app)
+bcrypt = Bcrypt(app)
+jwt = JWTManager(app)
 migrate = Migrate(app, db)
 
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(120), unique=True, nullable=False)
     username = db.Column(db.String(50), unique=True, nullable=False)
+    password = db.Column(db.String(200), nullable=False)  # Hashed password
     #containers = db.relationship('Container', backref='appuser', lazy=True)
 
 class Container(db.Model):
@@ -40,10 +49,43 @@ def index():
 
     existing_user = User.query.get(1)
     if not existing_user:
-        new_user = User(id=1, username='default_user')
+        new_user = User(id=1, username='default_user', password='some', email='some@gmail.com')
         db.session.add(new_user)
         db.session.commit()
     return 'Hello, world! This is my server application.'
+
+
+# Registration endpoint
+@app.route('/register', methods=['POST'])
+def register():
+    data = request.get_json()
+    email = data.get('email')
+    username = data.get('username')
+    password = data.get('password')
+
+    if User.query.filter_by(email=email).first():
+        return jsonify({"msg": "Email already registered"}), 400
+
+    hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+    new_user = User(email=email, username=username, password=hashed_password)
+    db.session.add(new_user)
+    db.session.commit()
+    return jsonify({"msg": "User registered successfully"}), 201
+
+
+# Login endpoint
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    email = data.get('email')
+    password = data.get('password')
+
+    user = User.query.filter_by(email=email).first()
+    if user and bcrypt.check_password_hash(user.password, password):
+        access_token = create_access_token(identity={'email': user.email, 'username': user.username})
+        return jsonify(access_token=access_token, real_name=user.username, email=user.email), 200
+    return jsonify({"msg": "Invalid credentials"}), 401
+
 
 
 
