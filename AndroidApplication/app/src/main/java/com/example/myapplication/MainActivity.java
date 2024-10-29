@@ -9,6 +9,7 @@ import android.provider.Settings;
 import android.view.View;
 import android.view.Menu;
 
+import com.example.myapplication.ui.welcome.WelcomeActivity;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.material.navigation.NavigationView;
@@ -30,6 +31,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import android.content.pm.PackageManager;
 import android.Manifest;
+import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -175,7 +177,28 @@ public class MainActivity extends AppCompatActivity {
         NavigationUI.setupActionBarWithNavController(this, navController, mAppBarConfiguration);
         NavigationUI.setupWithNavController(navigationView, navController);
 
-       // mapFragment.getMapAsync(this);
+
+        Button logoutButton = navigationView.findViewById(R.id.nav_logout_button);
+        // Log Out button click listener
+        logoutButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // Clear login data from SharedPreferences
+                SharedPreferences prefss = getSharedPreferences("MyAppPrefs", MODE_PRIVATE);
+                prefss.edit().remove("jwt_token").apply();
+                prefss.edit().remove("real_name").apply();
+                prefss.edit().remove("email").apply();
+
+                // Redirect to LoginActivity
+                Intent intent = new Intent(MainActivity.this, WelcomeActivity.class);
+                startActivity(intent);
+                finish();
+            }
+        });
+
+
+
+        // mapFragment.getMapAsync(this);
 
     }
 
