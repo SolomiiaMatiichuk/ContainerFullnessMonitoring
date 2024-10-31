@@ -115,7 +115,7 @@
                 android:text="WiFi сконфігуровано: "
                 android:textSize="16sp"
                 android:textColor="#FFFFFF"
-                android:padding="8dp" />
+                android:padding="2dp" />
 
             <TextView
                 android:id="@+id/gps_config_textview"
@@ -124,7 +124,7 @@
                 android:text="GPS сконфігуровано: "
                 android:textSize="16sp"
                 android:textColor="#FFFFFF"
-                android:padding="8dp" />
+                android:padding="2dp" />
 
             <TextView
                 android:id="@+id/current_length_textview"
@@ -133,7 +133,7 @@
                 android:text="Поточна відстань: "
                 android:textSize="16sp"
                 android:textColor="#FFFFFF"
-                android:padding="8dp" />
+                android:padding="2dp" />
 
             <TextView
                 android:id="@+id/user_id_textview"
@@ -142,7 +142,7 @@
                 android:text="ID користувача: "
                 android:textSize="16sp"
                 android:textColor="#FFFFFF"
-                android:padding="8dp" />
+                android:padding="2dp" />
 
             <TextView
                 android:id="@+id/active_data_textview"
@@ -151,7 +151,7 @@
                 android:text="Оновлення даних включено: "
                 android:textSize="16sp"
                 android:textColor="#FFFFFF"
-                android:padding="8dp" />
+                android:padding="2dp" />
         </LinearLayout>
     </androidx.cardview.widget.CardView>
 

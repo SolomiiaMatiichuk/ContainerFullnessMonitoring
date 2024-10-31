@@ -3,6 +3,7 @@ package com.example.myapplication.ui.bluetooth;
 import static androidx.core.content.ContextCompat.getSystemService;
 
 import android.Manifest;
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -485,14 +486,24 @@ public class BluetoothFragment extends Fragment implements AdapterView.OnItemCli
     }
 
 
+    private static final int REQUEST_CODE_MAP = 1;
+    private static EditText latEditText, lonEditText;
+
     private void showGPSPopup() {
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
         builder.setTitle("Введіть дані GPS");
 
         View viewInflated = LayoutInflater.from(getContext()).inflate(R.layout.popup_gps, (ViewGroup) getView(), false);
+        latEditText = viewInflated.findViewById(R.id.latitude);
+        lonEditText = viewInflated.findViewById(R.id.longitude);
 
-        final EditText latEditText = viewInflated.findViewById(R.id.latitude);
-        final EditText lonEditText = viewInflated.findViewById(R.id.longitude);
+
+        // Button to select coordinates on the map
+        Button selectOnMapButton = viewInflated.findViewById(R.id.selectOnMapButton);
+        selectOnMapButton.setOnClickListener(view -> {
+            Intent intent = new Intent(getContext(), MapActivity.class);
+            startActivityForResult(intent, REQUEST_CODE_MAP);
+        });
 
         builder.setView(viewInflated);
 
@@ -506,6 +517,22 @@ public class BluetoothFragment extends Fragment implements AdapterView.OnItemCli
 
         builder.show();
     }
+
+    // Receive result from MapActivity
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQUEST_CODE_MAP && resultCode == Activity.RESULT_OK) {
+            double latitude = data.getDoubleExtra("latitude", 0);
+            double longitude = data.getDoubleExtra("longitude", 0);
+
+
+            // Set the coordinates in the EditText fields
+            latEditText.setText(String.valueOf(latitude));
+            lonEditText.setText(String.valueOf(longitude));
+        }
+    }
+
 
     private void sendGPSData() {
         showGPSPopup();
