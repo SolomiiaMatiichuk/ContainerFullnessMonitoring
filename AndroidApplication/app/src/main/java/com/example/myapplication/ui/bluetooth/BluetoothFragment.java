@@ -76,7 +76,7 @@ public class BluetoothFragment extends Fragment implements AdapterView.OnItemCli
 
     private TextView bluetoothResponseTextView;
 
-    private TextView wifiConfigTextView, gpsConfigTextView, currentLengthTextView, userIdTextView;
+    private TextView wifiConfigTextView, gpsConfigTextView, currentLengthTextView, userIdTextView, activeDataTextView;
 
     private TextView configTitleTextView, titleTerminalTextView, searchTitleTextView;
     private CardView cardView;
@@ -92,10 +92,12 @@ public class BluetoothFragment extends Fragment implements AdapterView.OnItemCli
     private String containerLength = "невідомо";
     private String userId = "невідомо";
 
+    private String dataActive = "невідомо";
+
     private float received_current_distance = 0;
 
 
-    private Button sendWifiDataButton, sendGPSDataButton, disconnectButton, sendUserIdButton, calibrateButton;
+    private Button sendWifiDataButton, sendGPSDataButton, disconnectButton, sendUserIdButton, calibrateButton, dataActiveButton;
 
     private final BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
@@ -121,6 +123,7 @@ public class BluetoothFragment extends Fragment implements AdapterView.OnItemCli
         View view = inflater.inflate(R.layout.fragment_bluetooth, container, false);
 
         discoveredDevicesListView = view.findViewById(R.id.discovered_devices_list);
+        dataActiveButton = view.findViewById(R.id.update_active_data);
         sendWifiDataButton = view.findViewById(R.id.send_wifi_data_button);
         sendGPSDataButton = view.findViewById(R.id.send_gps_data_button);
         sendUserIdButton = view.findViewById(R.id.send_user_id);
@@ -132,6 +135,7 @@ public class BluetoothFragment extends Fragment implements AdapterView.OnItemCli
         gpsConfigTextView = view.findViewById(R.id.gps_config_textview);
         currentLengthTextView = view.findViewById(R.id.current_length_textview);
         userIdTextView = view.findViewById(R.id.user_id_textview);
+        activeDataTextView = view.findViewById(R.id.active_data_textview);
         bluetoothResponseTextView = view.findViewById(R.id.bluetooth_response_textview);
 
          configTitleTextView = view.findViewById(R.id.config_title);
@@ -168,6 +172,7 @@ public class BluetoothFragment extends Fragment implements AdapterView.OnItemCli
         getActivity().registerReceiver(receiver, filter);
 
         sendWifiDataButton.setOnClickListener(v -> sendWifiData());
+        dataActiveButton.setOnClickListener(v -> sendDataActive());
         sendGPSDataButton.setOnClickListener(v -> sendGPSData());
         sendUserIdButton.setOnClickListener(v -> sendUserId());
         calibrateButton.setOnClickListener(v -> showCalibratePopup());
@@ -200,7 +205,7 @@ public class BluetoothFragment extends Fragment implements AdapterView.OnItemCli
         }
         boolean success = bluetoothAdapter.startDiscovery();
         if (!success) {
-            Toast.makeText(getContext(), "Failed to start discovery", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(), "Помилка при пошуку блютуз пристроїв", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -217,12 +222,14 @@ public class BluetoothFragment extends Fragment implements AdapterView.OnItemCli
             InputStream inputStream = bluetoothSocket.getInputStream();
 
             Toast.makeText(getContext(), "Connected to " + device.getName(), Toast.LENGTH_SHORT).show();
+            dataActiveButton.setEnabled(true);
             sendWifiDataButton.setEnabled(true);
             sendGPSDataButton.setEnabled(true);
             calibrateButton.setEnabled(true);
             sendUserIdButton.setEnabled(true);
             disconnectButton.setEnabled(true);
 
+            dataActiveButton.setVisibility(View.VISIBLE);
             sendWifiDataButton.setVisibility(View.VISIBLE);
             sendGPSDataButton.setVisibility(View.VISIBLE);
             sendUserIdButton.setVisibility(View.VISIBLE);
@@ -246,7 +253,7 @@ public class BluetoothFragment extends Fragment implements AdapterView.OnItemCli
             new Thread(new BluetoothReadThread(inputStream)).start();
         } catch (IOException e) {
             e.printStackTrace();
-            Toast.makeText(getContext(), "Connection failed", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(), "Помилка з'єднання", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -300,6 +307,7 @@ public class BluetoothFragment extends Fragment implements AdapterView.OnItemCli
                 gpsConfigured = parts[2].split(":")[1].trim();
                 containerLength = parts[3].split(":")[1].trim();
                 userId = parts[4].split(":")[1].trim();
+                dataActive = parts[5].split(":")[1].trim();
                 updateDeviceConfiguration();
 
                 bluetoothResponseTextView.append("\n" + "Дані конфігурації оновлені! " + "\n");
@@ -370,6 +378,24 @@ public class BluetoothFragment extends Fragment implements AdapterView.OnItemCli
         res = new SpannableString(userId);
         res.setSpan(new ForegroundColorSpan(Color.parseColor("#ADD8E6")), 0, res.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
         userIdTextView.append(res);
+
+
+        activeDataTextView.setText("Оновлення даних включено: ");
+        activeDataTextView.append(parseConfig(dataActive));
+        try {
+            if (Integer.parseInt(dataActive) == 1) {
+                String newText = dataActiveButton.getText().toString().replace("ВІДНОВИТИ", "ЗУПИНИТИ");
+                dataActiveButton.setText(newText);
+
+            } else {
+                String newText = dataActiveButton.getText().toString().replace("ЗУПИНИТИ", "ВІДНОВИТИ");
+                dataActiveButton.setText(newText);
+
+            }
+        }
+        catch (NumberFormatException nfe)
+        {
+        }
     }
 
 
@@ -441,6 +467,24 @@ public class BluetoothFragment extends Fragment implements AdapterView.OnItemCli
     }
 
 
+    private void sendDataActive()
+    {
+        boolean res = false;
+        if (dataActiveButton.getText().toString().startsWith("ВІДНОВИТИ"))
+        {
+            String data = "update_data:1";
+            res = sendData(data);
+
+        }
+        else if (dataActiveButton.getText().toString().startsWith("ЗУПИНИТИ"))
+        {
+            String data = "update_data:0";
+            res = sendData(data);
+
+        }
+    }
+
+
     private void showGPSPopup() {
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
         builder.setTitle("Введіть дані GPS");
@@ -493,7 +537,7 @@ public class BluetoothFragment extends Fragment implements AdapterView.OnItemCli
         showUserIdPopup();
     }
 
-    private void sendData(String data) {
+    private boolean sendData(String data) {
         if (outputStream != null) {
             try {
 
@@ -502,12 +546,15 @@ public class BluetoothFragment extends Fragment implements AdapterView.OnItemCli
                 outputStream.write(data.getBytes());
                 // Ensure the data is sent immediately
                 outputStream.flush();
-                Toast.makeText(getContext(), "Data sent successfully", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), "Дані надіслано успішно", Toast.LENGTH_SHORT).show();
+                return true;
             } catch (IOException e) {
                 e.printStackTrace();
-                Toast.makeText(getContext(), "Failed to send data", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), "Сталася помилка при надсиланні даних", Toast.LENGTH_SHORT).show();
+                return false;
             }
         }
+        return false;
     }
 
     private void disconnect() {
@@ -516,6 +563,7 @@ public class BluetoothFragment extends Fragment implements AdapterView.OnItemCli
                 bluetoothSocket.close();
             }
             Toast.makeText(getContext(), "Disconnected", Toast.LENGTH_SHORT).show();
+            dataActiveButton.setEnabled(false);
             sendWifiDataButton.setEnabled(false);
             sendGPSDataButton.setEnabled(false);
             sendUserIdButton.setEnabled(false);
@@ -523,6 +571,7 @@ public class BluetoothFragment extends Fragment implements AdapterView.OnItemCli
             calibrateButton.setEnabled(false);
 
 
+            dataActiveButton.setVisibility(View.GONE);
             sendWifiDataButton.setVisibility(View.GONE);
             sendGPSDataButton.setVisibility(View.GONE);
             sendUserIdButton.setVisibility(View.GONE);
@@ -543,6 +592,7 @@ public class BluetoothFragment extends Fragment implements AdapterView.OnItemCli
             gpsConfigured = "невідомо";
             containerLength = "невідомо";
             userId = "невідомо";
+            dataActive = "невідомо";
         } catch (IOException e) {
             e.printStackTrace();
         }

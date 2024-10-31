@@ -24,6 +24,16 @@
         android:layout_height="wrap_content"
         android:layout_weight="1" />
 
+
+    <Button
+        android:id="@+id/update_active_data"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="ВІДНОВИТИ надходження даних"
+        android:backgroundTint="#FF018786"
+        android:enabled="false"
+        android:visibility="gone"/>
+
     <Button
         android:id="@+id/send_wifi_data_button"
         android:layout_width="match_parent"
@@ -102,7 +112,7 @@
                 android:id="@+id/wifi_config_textview"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="WiFi сконфігуровано:"
+                android:text="WiFi сконфігуровано: "
                 android:textSize="16sp"
                 android:textColor="#FFFFFF"
                 android:padding="8dp" />
@@ -111,7 +121,7 @@
                 android:id="@+id/gps_config_textview"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="GPS сконфігуровано:"
+                android:text="GPS сконфігуровано: "
                 android:textSize="16sp"
                 android:textColor="#FFFFFF"
                 android:padding="8dp" />
@@ -120,7 +130,7 @@
                 android:id="@+id/current_length_textview"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Поточна відстань:"
+                android:text="Поточна відстань: "
                 android:textSize="16sp"
                 android:textColor="#FFFFFF"
                 android:padding="8dp" />
@@ -129,7 +139,16 @@
                 android:id="@+id/user_id_textview"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="ID користувача:"
+                android:text="ID користувача: "
+                android:textSize="16sp"
+                android:textColor="#FFFFFF"
+                android:padding="8dp" />
+
+            <TextView
+                android:id="@+id/active_data_textview"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Оновлення даних включено: "
                 android:textSize="16sp"
                 android:textColor="#FFFFFF"
                 android:padding="8dp" />

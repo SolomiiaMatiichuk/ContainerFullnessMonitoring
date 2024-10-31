@@ -24,6 +24,9 @@ char lon[32];
 // default user id
 int user_id = 1;
 
+
+bool bluetoothConnected = false;
+
 // container id (cannot be changes)
 const int container_id = 74565;
 
@@ -36,7 +39,7 @@ const char* serverUrlGps = "https://container-monitoring-server-5e33a8983798.her
 // Define NTP Client to get time
 const char* ntpServer = "pool.ntp.org";
 const long gmtOffset_sec = 0;
-const int daylightOffset_sec = 10800;
+const int daylightOffset_sec = 7200;
 
 
 BluetoothSerial SerialBT;
@@ -54,6 +57,7 @@ bool waitForUpdate = false;
 
 float container_length = 30;
 
+bool update_data = false;
 
 bool loadSettings() {
   // Load settings from flash memory
@@ -76,8 +80,7 @@ bool loadGPSSettings() {
   return (lat[0] != '\0' && lon[0] != '\0');
 }
 
-void saveGPSsettings(const char* lat, const char* lon)
-{
+void saveGPSsettings(const char* lat, const char* lon) {
   preferences.putString("lat", lat);
   preferences.putString("lon", lon);
 }
@@ -88,35 +91,57 @@ void loadLengthSettings() {
   container_length = preferences.getFloat("length", 0.0);
 }
 
-void saveLengthSetting()
-{
+void saveLengthSetting() {
   preferences.putFloat("length", container_length);
 }
 
+
+void loadUpdateSettings() {
+  // Load settings from flash memory
+  update_data = preferences.getBool("update_data", false);
+}
+
+void saveUpdateSetting() {
+  preferences.putBool("update_data", update_data);
+}
+
+
 void sendGPSData() {
 
-  // Create JSON payload
-  String jsonPayload = "{\"latitude\": " + String(lat) + ", \"longitude\": " + String(lon) + "}";
-  Serial.println(jsonPayload);
+  disableBluetooth();
+  connectToWiFi();
+  if (WiFi.status() == WL_CONNECTED) {
 
-  // Send HTTP PUT request to server
-  http.begin(serverUrlGps);
-  http.addHeader("Content-Type", "application/json");
-  http.setTimeout(15000);
-  int httpResponseCode = http.PUT(jsonPayload);
+    // Create JSON payload
+    String jsonPayload = "{\"latitude\": " + String(lat) + ", \"longitude\": " + String(lon) + "}";
+    Serial.println(jsonPayload);
 
-  if (httpResponseCode > 0) {
-    String response = http.getString();
-    Serial.println("HTTP Response code: " + String(httpResponseCode));
-    Serial.println("Server response: " + response);
-    gps_data_send_successfully = true;
+    // Send HTTP PUT request to server
+    http.begin(serverUrlGps);
+    http.addHeader("Content-Type", "application/json");
+    http.setTimeout(15000);
+    int httpResponseCode = http.PUT(jsonPayload);
+
+    if (httpResponseCode > 0) {
+      String response = http.getString();
+      Serial.println("HTTP Response code: " + String(httpResponseCode));
+      Serial.println("Server response: " + response);
+      gps_data_send_successfully = true;
+    } else {
+      Serial.println("Error sending PUT request");
+      Serial.println("HTTP Response code: " + String(httpResponseCode));
+      gps_data_send_successfully = false;
+    }
+
+    http.end();
+
+    enableBluetooth();
   } else {
-    Serial.println("Error sending PUT request");
-    Serial.println("HTTP Response code: " + String(httpResponseCode));
-    gps_data_send_successfully = false;
+    Serial.println("Wifi connection error");
   }
 
-  http.end();
+  disconnectWiFi();
+  enableBluetooth();
 }
 
 void connectToWiFi() {
@@ -139,6 +164,13 @@ void connectToWiFi() {
   } else {
     Serial.print("Timeout passed. Wi-fi connection failed. Please, try again.");
   }
+}
+
+
+// Function to disconnect Wi-Fi
+void disconnectWiFi() {
+  WiFi.disconnect(true);
+  Serial.println("WiFi disconnected");
 }
 
 
@@ -173,6 +205,26 @@ void scan_wifi_networks() {
   }
 }
 
+bool bluetoothEnabled = true;
+
+
+void disableBluetooth() {
+  if (bluetoothEnabled) {
+    SerialBT.end();
+    bluetoothEnabled = false;
+    Serial.println("Bluetooth disabled");
+  }
+}
+
+void enableBluetooth() {
+  if (!bluetoothEnabled) {
+    SerialBT.begin(device_name);
+    Serial.printf("Bluetooth device name: \"%s\"\n", device_name.c_str());
+    bluetoothEnabled = true;
+    Serial.println("Bluetooth re-enabled");
+  }
+}
+
 void setup() {
 
   Serial.begin(115200);
@@ -186,12 +238,12 @@ void setup() {
   pinMode(ECHO_PIN, INPUT_PULLUP);
 
   loadLengthSettings();
+  loadUpdateSettings();
 
 
-   if (loadGPSSettings())
-    {
-      gpsConfigured = true;
-    }
+  if (loadGPSSettings()) {
+    gpsConfigured = true;
+  }
 
   // Load settings from flash memory
   wifiConfigured = loadSettings();
@@ -216,8 +268,10 @@ void setup() {
     Serial.println("Current time configuration is successful");
   }
 
-  Serial.println("Scanning Wi-Fi networks");
-  scan_wifi_networks();
+  //Serial.println("Scanning Wi-Fi networks");
+  //scan_wifi_networks();
+
+  disconnectWiFi();  // disconnect, not needed for now
 }
 
 
@@ -231,6 +285,12 @@ float getDistance() {
 
   float duration = pulseIn(ECHO_PIN, 1);
   return (duration * 0.0343) / 2;
+}
+
+
+void sendConfigData() {
+  String config_data = "CONFIG:,wifi:" + String(wifiConfigured) + ",gps:" + String(gpsConfigured) + ",length:" + String(container_length) + ",user_id:" + String(user_id) + ",data_active:" + String(update_data);
+  SerialBT.println(config_data);
 }
 
 void parseData(String data) {
@@ -269,16 +329,13 @@ void parseData(String data) {
         configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
       }
 
-      
+      disconnectWiFi();  // disconnect, not needed for now
     } else {
       wifiConfigured = false;
       SerialBT.println("Під'єднання до Wifi НЕ ВДАЛОСЯ. Перевірте правильність введених ssid та password!");
     }
-    String config_data = "CONFIG:,wifi:" + String(wifiConfigured) +
-                  ",gps:" + String(gpsConfigured) +
-                  ",length:" + String(container_length) +
-                  ",user_id:" + String(user_id);
-    SerialBT.println(config_data);
+
+    sendConfigData();
   } else if (data.startsWith("gps:")) {
     data.remove(0, 4);  // Remove "gps:" prefix
     data.trim();
@@ -303,12 +360,9 @@ void parseData(String data) {
     SerialBT.println(longitude);
 
     gpsConfigured = true;
+    gps_data_send_successfully = false;
 
-    String config_data = "CONFIG:,wifi:" + String(wifiConfigured) +
-                  ",gps:" + String(gpsConfigured) +
-                  ",length:" + String(container_length) +
-                  ",user_id:" + String(user_id);
-    SerialBT.println(config_data);
+    sendConfigData();
   } else if (data.startsWith("user_id:")) {
     data.remove(0, 8);  // Remove "user_id:" prefix
     data.trim();
@@ -319,42 +373,40 @@ void parseData(String data) {
     SerialBT.print("Дані про id користувача надіслані успішно! Тепер id користувача = ");
     SerialBT.println(user_id);
 
-    String config_data = "CONFIG:,wifi:" + String(wifiConfigured) +
-                  ",gps:" + String(gpsConfigured) +
-                  ",length:" + String(container_length) +
-                  ",user_id:" + String(user_id);
-    SerialBT.println(config_data);
-  } 
-  else if (data.startsWith("GET_CONFIG"))
-  {
-    String config_data = "CONFIG:,wifi:" + String(wifiConfigured) +
-                  ",gps:" + String(gpsConfigured) +
-                  ",length:" + String(container_length) +
-                  ",user_id:" + String(user_id);
-    SerialBT.println(config_data);
-  }
-  else if (data.startsWith("GET_CURRENT_DISTANCE"))
-  {
+    sendConfigData();
+  } else if (data.startsWith("GET_CONFIG")) {
+    sendConfigData();
+  } else if (data.startsWith("GET_CURRENT_DISTANCE")) {
+    distance = getDistance();
     String distance_str = "Distance:" + String(distance);
     Serial.println(distance_str);
     SerialBT.println(distance_str);
-  }
-  else if (data.startsWith("length:"))
-  {
+  } else if (data.startsWith("length:")) {
     data.remove(0, 7);  // Remove "length:" prefix
     data.trim();
 
-    container_length = data.toFloat(); 
+    container_length = data.toFloat();
 
     saveLengthSetting();
 
-    String config_data = "CONFIG:,wifi:" + String(wifiConfigured) +
-                  ",gps:" + String(gpsConfigured) +
-                  ",length:" + String(container_length) +
-                  ",user_id:" + String(user_id);
-    SerialBT.println(config_data);
-  }
-  else {
+    sendConfigData();
+  } else if (data.startsWith("update_data:")) {
+    data.remove(0, 12);  // Remove "update_data:" prefix
+    data.trim();
+
+    update_data = (bool)data.toInt();
+
+    saveUpdateSetting();
+
+    if (update_data == true) {
+      SerialBT.println("Надходження даних про зміну наповненості ВІДНОВЛЕНО");
+    } else {
+      SerialBT.println("Надходження даних про зміну наповненості ПРИЗУПИНЕНО.");
+    }
+
+    sendConfigData();
+
+  } else {
     SerialBT.println("Неправильний формат даних: " + data);
   }
 }
@@ -362,89 +414,122 @@ void parseData(String data) {
 
 void loop() {
 
+  if (SerialBT.hasClient() && !bluetoothConnected) {
+    bluetoothConnected = true;
+    Serial.println("Bluetooth client connected\n");
+  }
+
+
+  if (!SerialBT.hasClient() && bluetoothConnected) {
+    bluetoothConnected = false;
+    Serial.println("Bluetooth client disconnected\n");
+  }
+
+
   // Check if data is available via Bluetooth
   if (SerialBT.available()) {
     String data = SerialBT.readStringUntil(';');
     if (data.length() > 0) {  // Check if the data string is not empty
-    parseData(data);
+      parseData(data);
     }
   }
-  
+
+
+
 
   // If WiFi is configured, send data to server
-  if (wifiConfigured && WiFi.status() == WL_CONNECTED) {
-    distance = getDistance();
-    Serial.print("Current distance: ");
-    Serial.println(distance);
-    unsigned long currentTime = millis();
+  if (wifiConfigured) {
+    if (bluetoothConnected == false) {
 
-    if(lastDistanceUpdate == 0)
-    {
-            lastDistanceUpdate = millis();
-      lastDistance = distance;
-    }
+      if (update_data == true) {
 
-    if (loadGPSSettings() && (gps_data_send_successfully==false))
-    {
-      sendGPSData();
-      gpsConfigured = true;
-    }
+        distance = getDistance();
+        Serial.print("Current distance: ");
+        Serial.println(distance);
+
+        unsigned long currentTime = millis();
+
+        if (lastDistanceUpdate == 0) {
+          lastDistanceUpdate = millis();
+          lastDistance = distance;
+        }
+
+        if (loadGPSSettings() && (gps_data_send_successfully == false)) {
+          sendGPSData();
+          gpsConfigured = true;
+        }
 
 
-    // Send data if distance changes more than 2.5 cm
-    if (abs(distance - lastDistance) > 2.5) {
-      lastDistanceUpdate = millis();
-      lastDistance = distance;
-      waitForUpdate = true;
-    }
+        // Send data if distance changes more than 2.5 cm
+        if (abs(distance - lastDistance) > 2.5) {
+          lastDistanceUpdate = millis();
+          lastDistance = distance;
+          waitForUpdate = true;
+        }
 
-    else if ((waitForUpdate == true && (abs(distance - lastDistance) <= 2.5) && (currentTime - lastDistanceUpdate > 10000)) || (data_send_successfully == false)) {
-      waitForUpdate = false;
+        else if ((waitForUpdate == true && (abs(distance - lastDistance) <= 2.5) && (currentTime - lastDistanceUpdate > 10000)) || (data_send_successfully == false)) {
+          waitForUpdate = false;
 
-      struct tm timeinfo;
-      if (!getLocalTime(&timeinfo)) {
-        Serial.println("Failed to obtain time");
-        configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
-        return;
+          disableBluetooth();
+          connectToWiFi();
+
+          if (WiFi.status() == WL_CONNECTED) {
+
+
+            struct tm timeinfo;
+            if (!getLocalTime(&timeinfo)) {
+              Serial.println("Failed to obtain time");
+              configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+              return;
+            }
+            Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
+            Serial.println();
+
+            // Format timestamp
+            char formattedTime[20];
+            strftime(formattedTime, sizeof(formattedTime), "%Y-%m-%d %H:%M:%S", &timeinfo);
+
+            // Create JSON payload
+            String jsonPayload = "{\"user_id\": " + String(user_id) + ", \"container_id\": " + String(container_id) + ", \"distance\": " + String(distance) + ", \"container_length\": " + String(container_length) + ", \"timestamp\": \"" + String(formattedTime) + "\"}";
+
+
+            // Send HTTP POST request to server
+            http.begin(serverUrl);
+            http.addHeader("Content-Type", "application/json");
+            http.setTimeout(15000);
+            int httpResponseCode = http.POST(jsonPayload);
+
+            if (httpResponseCode > 0) {
+              String response = http.getString();
+              Serial.println("HTTP Response code: " + String(httpResponseCode));
+              Serial.println("Server response: " + response);
+              data_send_successfully = true;
+            } else {
+              Serial.println("Error sending POST request");
+              Serial.println("HTTP Response code: " + String(httpResponseCode));
+              data_send_successfully = false;
+            }
+
+            http.end();
+
+          } else {
+            Serial.println("WiFi not working!");
+            data_send_successfully = false;
+          }
+
+          disconnectWiFi();
+          enableBluetooth();
+        }
+
+        delay(2000);  // update data every 2 seconds
       }
-      Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
-      Serial.println();
-
-      // Format timestamp
-      char formattedTime[20];
-      strftime(formattedTime, sizeof(formattedTime), "%Y-%m-%d %H:%M:%S", &timeinfo);
-
-      // Create JSON payload
-      String jsonPayload = "{\"user_id\": " + String(user_id) + ", \"container_id\": " + String(container_id) + ", \"distance\": " + String(distance) + ", \"container_length\": " +   String(container_length) +    ", \"timestamp\": \"" + String(formattedTime) + "\"}";
-
-
-      // Send HTTP POST request to server
-      http.begin(serverUrl);
-      http.addHeader("Content-Type", "application/json");
-      http.setTimeout(15000);
-      int httpResponseCode = http.POST(jsonPayload);
-
-      if (httpResponseCode > 0) {
-        String response = http.getString();
-        Serial.println("HTTP Response code: " + String(httpResponseCode));
-        Serial.println("Server response: " + response);
-        data_send_successfully = true;
-      } else {
-        Serial.println("Error sending POST request");
-        Serial.println("HTTP Response code: " + String(httpResponseCode));
-        data_send_successfully = false;
-      }
-
-      http.end();
     }
-
-    delay(2000);  // update data every 2 seconds
   } else {
     // If WiFi is not connected, wait for Bluetooth
     Serial.println("Waiting for Bluetooth...");
-    while (!SerialBT.available()) {
+    while (!SerialBT.hasClient()) {
       delay(1000);
-      if (wifiConfigured && WiFi.status() == WL_CONNECTED)
+      if (wifiConfigured)
         break;
     }
   }
