@@ -5,6 +5,7 @@ public class User {
     private String username;
     private String password;
 
+
     public User(String email, String username, String password) {
         this.email = email;
         this.username = username;

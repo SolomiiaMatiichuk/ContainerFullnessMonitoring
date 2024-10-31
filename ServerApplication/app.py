@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, url_for
 from flask_sqlalchemy  import SQLAlchemy
 from datetime import datetime, timedelta
 from flask_migrate import Migrate
@@ -6,6 +6,10 @@ from flask_bcrypt import Bcrypt
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from sqlalchemy import desc
 import os
+from itsdangerous import URLSafeTimedSerializer
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 app = Flask(__name__)
 
@@ -24,8 +28,9 @@ migrate = Migrate(app, db)
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
-    username = db.Column(db.String(50), unique=True, nullable=False)
+    username = db.Column(db.String(50), nullable=False)
     password = db.Column(db.String(200), nullable=False)  # Hashed password
+    role = db.Column(db.String(20), nullable=False, default="user")
     #containers = db.relationship('Container', backref='appuser', lazy=True)
 
 class Container(db.Model):
@@ -44,9 +49,57 @@ class FullnessData(db.Model):
     fullness = db.Column(db.Integer, nullable=False)
     timestamp = db.Column(db.DateTime, nullable=False)
 
+
+def send_email(recipient, subject, body):
+    sender_email = "hoshko.bohdan.m@gmail.com"
+    sender_password = "hrbd krid prri ivmp"
+
+    # Set up the MIME
+    message = MIMEMultipart()
+    message['From'] = sender_email
+    message['To'] = recipient
+    message['Subject'] = subject
+    message.attach(MIMEText(body, 'plain'))
+
+    try:
+        # Connect to Gmail SMTP server
+        with smtplib.SMTP('smtp.gmail.com', 587) as server:
+            server.starttls()  # Secure the connection
+            server.login(sender_email, sender_password)
+            server.sendmail(sender_email, recipient, message.as_string())
+        print("Email sent successfully.")
+    except Exception as e:
+        print(f"Error sending email: {e}")
+
+
+# Check if admin user exists and create if not
+def create_admin():
+    admin_email = "admin@gmail.com"
+    admin_password = "admin_password"
+    admin = User.query.filter_by(email=admin_email).first()
+    if not admin:
+        hashed_password = bcrypt.generate_password_hash(admin_password).decode('utf-8')
+        admin = User(email=admin_email, username="Admin", password=hashed_password, role="admin")
+        db.session.add(admin)
+        db.session.commit()
+
+# Function to generate confirmation token
+def generate_confirmation_token(email):
+    serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
+    return serializer.dumps(email, salt='email-confirmation-salt')
+
+# Function to confirm the token
+def confirm_token(token, expiration=3600):
+    serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
+    try:
+        email = serializer.loads(token, salt='email-confirmation-salt', max_age=expiration)
+    except:
+        return False
+    return email
+
 @app.route('/')
 def index():
-
+    create_admin()
     existing_user = User.query.get(1)
     if not existing_user:
         new_user = User(id=1, username='default_user', password='some', email='some@gmail.com')
@@ -67,10 +120,33 @@ def register():
         return jsonify({"msg": "Email already registered"}), 400
 
     hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+
+    # Generate confirmation token
+    token = generate_confirmation_token(email)
+    confirm_url = url_for('confirm_email', token=token, username=username, password=hashed_password, _external=True)
+
+    # Send confirmation email
+    send_email(email, 'Confirm Your Account', f'Please confirm your email by clicking this link: {confirm_url}')
+
+    return jsonify({"msg": "Please check your email to confirm your account."}), 200
+
+
+
+@app.route('/confirm/<token>', methods=['GET'])
+def confirm_email(token):
+    email = confirm_token(token)
+    if not email:
+        return jsonify({"msg": "The confirmation link is invalid or has expired."}), 400
+
+    username = request.args.get('username')
+    hashed_password = request.args.get('password')
+
+    
     new_user = User(email=email, username=username, password=hashed_password)
     db.session.add(new_user)
     db.session.commit()
-    return jsonify({"msg": "User registered successfully"}), 201
+
+    return jsonify({"msg": "Your account has been confirmed and registered. You may now log in."}), 200
 
 
 # Login endpoint
@@ -82,11 +158,19 @@ def login():
 
     user = User.query.filter_by(email=email).first()
     if user and bcrypt.check_password_hash(user.password, password):
-        access_token = create_access_token(identity={'email': user.email, 'username': user.username})
-        return jsonify(access_token=access_token, real_name=user.username, email=user.email), 200
+        access_token = create_access_token(identity={'email': user.email, 'username': user.username, 'role': user.role})
+        return jsonify(access_token=access_token, real_name=user.username, email=user.email, role=user.role), 200
     return jsonify({"msg": "Invalid credentials"}), 401
 
 
+
+@app.route('/check_confirmation', methods=['GET'])
+def check_confirmation():
+    email = request.args.get('email')
+    user = User.query.filter_by(email=email).first()
+    if user:
+        return jsonify(True), 200  # Return True if confirmed, otherwise False
+    return jsonify(False), 404
 
 
 @app.route('/data-endpoint', methods=['POST'])

@@ -59,6 +59,8 @@
             android:name=".ui.welcome.RegisterActivity"
             android:exported="false" />
 
+        <activity android:name=".ui.welcome.WaitingForConfirmationActivity" />
+
         <!-- MainActivity -->
         <activity
             android:name=".MainActivity"

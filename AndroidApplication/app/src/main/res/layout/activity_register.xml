@@ -9,32 +9,32 @@
         android:id="@+id/editTextEmail"
         android:layout_width="match_parent"
         android:layout_height="76dp"
-        android:hint="Email" />
+        android:hint="Електронна пошта" />
 
     <EditText
         android:id="@+id/editTextUsername"
         android:layout_width="match_parent"
         android:layout_height="70dp"
-        android:hint="Full Name" />
+        android:hint="Ім'я" />
 
     <EditText
         android:id="@+id/editTextPassword"
         android:layout_width="match_parent"
         android:layout_height="72dp"
-        android:hint="Password"
+        android:hint="Пароль"
         android:inputType="textPassword" />
 
     <EditText
         android:id="@+id/editTextConfirmPassword"
         android:layout_width="match_parent"
         android:layout_height="85dp"
-        android:hint="Confirm Password"
+        android:hint="Повторіть пароль"
         android:inputType="textPassword" />
 
     <Button
         android:id="@+id/buttonRegister"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Register"
+        android:text="Зареєструватися"
         android:layout_marginTop="16dp" />
 </LinearLayout>

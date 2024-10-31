@@ -8,6 +8,6 @@
     <string name="action_settings">Налаштування</string>
 
     <string name="menu_home">Карта</string>
-    <string name="menu_gallery">Підключитися до пристрою</string>
+    <string name="menu_gallery">Адмін налаштування</string>
     <string name="menu_slideshow">Налаштування</string>
 </resources>

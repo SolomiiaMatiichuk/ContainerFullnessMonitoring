@@ -50,21 +50,24 @@ public class RegisterActivity extends AppCompatActivity {
                         @Override
                         public void onResponse(Call<Void> call, Response<Void> response) {
                             if (response.isSuccessful()) {
-                                Toast.makeText(RegisterActivity.this, "Registration successful", Toast.LENGTH_SHORT).show();
-                                startActivity(new Intent(RegisterActivity.this, LoginActivity.class));
+                                Toast.makeText(RegisterActivity.this, "Реєстрація успішна. Підтвердіть, будь ласка, емейл, відкривши надісланий лист", Toast.LENGTH_SHORT).show();
+                                // Navigate to WaitingForConfirmationActivity
+                                Intent intent = new Intent(RegisterActivity.this, WaitingForConfirmationActivity.class);
+                                intent.putExtra("email", email);
+                                startActivity(intent);
                                 finish();
                             } else {
-                                Toast.makeText(RegisterActivity.this, "Registration failed", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(RegisterActivity.this, "Помилка реєстрації. Спробуйте ще раз!", Toast.LENGTH_SHORT).show();
                             }
                         }
 
                         @Override
                         public void onFailure(Call<Void> call, Throwable t) {
-                            Toast.makeText(RegisterActivity.this, "An error occurred", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(RegisterActivity.this, "Помилка реєстрації. Спробуйте ще раз!", Toast.LENGTH_SHORT).show();
                         }
                     });
                 } else {
-                    Toast.makeText(RegisterActivity.this, "Passwords do not match", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(RegisterActivity.this, "Паролі не співпадають!", Toast.LENGTH_SHORT).show();
                 }
             }
         });

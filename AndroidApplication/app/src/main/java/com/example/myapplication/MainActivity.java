@@ -6,6 +6,7 @@ import android.content.SharedPreferences;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.Menu;
 
@@ -167,6 +168,20 @@ public class MainActivity extends AppCompatActivity {
 //        });
         DrawerLayout drawer = binding.drawerLayout;
         NavigationView navigationView = binding.navView;
+
+
+        prefs = getSharedPreferences("MyAppPrefs", MODE_PRIVATE);
+        String role = prefs.getString("role", "user"); // Default to "user" if role is not set
+
+        Menu menu = navigationView.getMenu();
+        MenuItem connectDeviceMenuItem = menu.findItem(R.id.nav_gallery);
+
+        // Show or hide the menu item based on the role
+        if ("admin".equals(role)) {
+            connectDeviceMenuItem.setVisible(true); // Show for admin
+        } else {
+            connectDeviceMenuItem.setVisible(false); // Hide for regular users
+        }
         // Passing each menu ID as a set of Ids because each
         // menu should be considered as top level destinations.
         mAppBarConfiguration = new AppBarConfiguration.Builder(

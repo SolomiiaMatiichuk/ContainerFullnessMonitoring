@@ -8,7 +8,7 @@
         android:id="@+id/text_welcome"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Welcome to Container Fullness Monitoring"
+        android:text="Вітаємо в додатку для моніторингу заповненості контейнерів. Будь ласка, ввійдіть в акаунт або зареєструйтеся!"
         android:textSize="18sp"
         android:layout_centerHorizontal="true"
         android:layout_marginBottom="24dp" />
@@ -17,7 +17,7 @@
         android:id="@+id/button_login"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Login"
+        android:text="Ввійти"
         android:layout_below="@id/text_welcome"
         android:layout_marginTop="16dp" />
 
@@ -25,7 +25,7 @@
         android:id="@+id/button_register"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Register"
+        android:text="Зареєструватися"
         android:layout_below="@id/button_login"
         android:layout_marginTop="16dp" />
 </RelativeLayout>

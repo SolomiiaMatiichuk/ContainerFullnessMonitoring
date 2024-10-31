@@ -53,6 +53,7 @@ public class LoginActivity extends AppCompatActivity {
                                     .putString("jwt_token", token)
                                     .putString("real_name", response.body().getRealName()) // Assuming getRealName() is available
                                     .putString("email", response.body().getEmail())       // Assuming getEmail() is available
+                                    .putString("role", response.body().getRole())
                                     .apply();
 
                             // Navigate to MainActivity
@@ -60,13 +61,13 @@ public class LoginActivity extends AppCompatActivity {
                             startActivity(intent);
                             finish();
                         } else {
-                            Toast.makeText(LoginActivity.this, "Login failed", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(LoginActivity.this, "Не вдалося ввійти!", Toast.LENGTH_SHORT).show();
                         }
                     }
 
                     @Override
                     public void onFailure(Call<LoginResponse> call, Throwable t) {
-                        Toast.makeText(LoginActivity.this, "An error occurred", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(LoginActivity.this, "Виникла помилка!", Toast.LENGTH_SHORT).show();
                     }
                 });
             }

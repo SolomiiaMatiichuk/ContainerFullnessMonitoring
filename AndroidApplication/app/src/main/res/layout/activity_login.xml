@@ -9,13 +9,13 @@
         android:id="@+id/editTextUsername"
         android:layout_width="match_parent"
         android:layout_height="84dp"
-        android:hint="Email" />
+        android:hint="Електронна пошта" />
 
     <EditText
         android:id="@+id/editTextPassword"
         android:layout_width="match_parent"
         android:layout_height="92dp"
-        android:hint="Password"
+        android:hint="Пароль"
         android:inputType="textPassword" />
 
     <Button
@@ -23,5 +23,5 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:text="Login" />
+        android:text="Ввійти" />
 </LinearLayout>

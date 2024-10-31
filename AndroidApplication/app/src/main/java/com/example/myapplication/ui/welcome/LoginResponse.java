@@ -5,6 +5,8 @@ public class LoginResponse {
     private String real_name;
     private String email;
 
+    private String role;
+
     public String getAccessToken() {
         return access_token;
     }
@@ -17,5 +19,11 @@ public class LoginResponse {
     // Getter for email
     public String getEmail() {
         return email;
+    }
+
+
+    // Getter for role
+    public String getRole() {
+        return role;
     }
 }
