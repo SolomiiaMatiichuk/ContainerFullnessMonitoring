@@ -486,6 +486,9 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
         LineData lineData = new LineData(dataSet);
         chart.setData(lineData);
 
+        // Remove the legend
+        chart.getLegend().setEnabled(false);
+
         // Set the custom marker view
         CustomMarkerView markerView = new CustomMarkerView(getContext(), R.layout.marker_view);
         chart.setMarker(markerView);
@@ -497,17 +500,22 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
         xAxis.setValueFormatter(new TimeValueFormatter());
         xAxis.setGranularity(1);
         xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
+        xAxis.setTextSize(14f);
 
         // Customize Y-axis and lock it from panning
         YAxis leftAxis = chart.getAxisLeft();
         leftAxis.setAxisMinimum(0);
         leftAxis.setAxisMaximum(100);
         leftAxis.setGranularity(10);
+        leftAxis.setTextSize(14f);
         chart.getAxisRight().setEnabled(false);
 
         chart.setScaleYEnabled(false);
         chart.setScaleXEnabled(true);
         chart.setDragEnabled(true);
+
+        // Add extra bottom offset for padding
+        chart.setExtraBottomOffset(10f);
 
         // Set initial zoom so the last visible X (right side) is current time
         if (!entries.isEmpty()) {
@@ -523,6 +531,7 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
         chart.getDescription().setEnabled(false);
         chart.invalidate();
     }
+
 
 
 
