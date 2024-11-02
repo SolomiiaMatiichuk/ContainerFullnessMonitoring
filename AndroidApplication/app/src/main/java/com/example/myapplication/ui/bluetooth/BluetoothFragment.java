@@ -369,7 +369,7 @@ public class BluetoothFragment extends Fragment implements AdapterView.OnItemCli
         gpsConfigTextView.setText("GPS сконфігуровано: ");
         gpsConfigTextView.append(parseConfig(gpsConfigured));
 
-        currentLengthTextView.setText("Відстань до дна: ");
+        currentLengthTextView.setText("Глибина контейнера: ");
         Spannable res = new SpannableString(containerLength + " см");
         res.setSpan(new ForegroundColorSpan(Color.parseColor("#ADD8E6")), 0, res.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
         currentLengthTextView.append(res);

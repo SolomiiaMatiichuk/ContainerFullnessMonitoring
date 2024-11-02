@@ -63,6 +63,12 @@
 
 
         <activity android:name=".ui.bluetooth.MapActivity"></activity>
+        <activity android:name=".ui.home.ContainerCheckWorker"></activity>
+
+
+        <activity android:name=".ui.welcome.ForgotPasswordActivity" />
+        <activity android:name=".ui.welcome.ResetPasswordWaitingActivity" />
+        <activity android:name=".ui.welcome.NewPasswordActivity" />
 
         <!-- MainActivity -->
         <activity

@@ -23,6 +23,9 @@ public class LoginActivity extends AppCompatActivity {
     private EditText passwordEditText;
     private ApiService apiService;
 
+
+    private Button  buttonForgotPassword;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -31,8 +34,18 @@ public class LoginActivity extends AppCompatActivity {
         emailEditText = findViewById(R.id.editTextUsername);
         passwordEditText = findViewById(R.id.editTextPassword);
         Button loginButton = findViewById(R.id.buttonLogin);
+        buttonForgotPassword = findViewById(R.id.buttonForgotPassword);
 
         apiService = ApiClient.getClient().create(ApiService.class);
+
+
+        buttonForgotPassword.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(LoginActivity.this, ForgotPasswordActivity.class);
+                startActivity(intent);
+            }
+        });
 
         loginButton.setOnClickListener(new View.OnClickListener() {
             @Override

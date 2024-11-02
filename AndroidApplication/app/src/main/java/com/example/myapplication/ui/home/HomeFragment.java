@@ -29,6 +29,8 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
+import androidx.work.PeriodicWorkRequest;
+import androidx.work.WorkManager;
 
 import com.example.myapplication.R;
 import com.example.myapplication.databinding.FragmentHomeBinding;
@@ -82,6 +84,7 @@ import com.github.mikephil.charting.data.LineDataSet;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.concurrent.TimeUnit;
 
 public class HomeFragment extends Fragment implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
     private LineChart chart;
@@ -116,7 +119,14 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
                 .findFragmentById(R.id.maps1);
         mapFragment.getMapAsync(this);
 
-        createNotificationChannel();
+
+        // Schedule WorkManager to check container fullness every 1 minutes
+        PeriodicWorkRequest fullnessCheckRequest = new PeriodicWorkRequest.Builder(ContainerCheckWorker.class, 1, TimeUnit.MINUTES)
+                .build();
+
+        WorkManager.getInstance(getContext()).enqueue(fullnessCheckRequest);
+
+       // createNotificationChannel();
 
         return rootView;
     }

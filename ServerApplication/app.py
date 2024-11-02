@@ -31,7 +31,7 @@ class User(db.Model):
     username = db.Column(db.String(50), nullable=False)
     password = db.Column(db.String(200), nullable=False)  # Hashed password
     role = db.Column(db.String(20), nullable=False, default="user")
-    #containers = db.relationship('Container', backref='appuser', lazy=True)
+    reset_confirmed = db.Column(db.Boolean, default=False)  
 
 class Container(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -70,6 +70,101 @@ def send_email(recipient, subject, body):
         print("Email sent successfully.")
     except Exception as e:
         print(f"Error sending email: {e}")
+
+
+# Generate confirmation token for password reset
+def generate_reset_token(email):
+    serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
+    return serializer.dumps(email, salt='password-reset-salt')
+
+# Confirm the reset token
+def confirm_reset_token(token, expiration=3600):
+    serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
+    try:
+        email = serializer.loads(token, salt='password-reset-salt', max_age=expiration)
+    except:
+        return False
+    return email
+
+# Endpoint to request password reset
+@app.route('/forgot-password', methods=['POST'])
+def forgot_password():
+    # Get email from query parameters instead of JSON body
+    email = request.args.get('email')
+    
+    if not email:
+        return jsonify({"msg": "Email is required"}), 400
+    
+    user = User.query.filter_by(email=email).first()
+    
+    if not user:
+        return jsonify({"msg": "Email not registered"}), 400
+    
+    # Generate reset token and URL
+    token = generate_reset_token(email)
+    reset_url = url_for('confirm_reset', token=token, _external=True)
+    
+    # Send email with reset link
+    send_email(email, "Reset Your Password", f"Click the link to reset your password: {reset_url}")
+    
+    return jsonify({"msg": "Password reset link has been sent to your email"}), 200
+
+
+@app.route('/confirm-reset/<token>', methods=['GET'])
+def confirm_reset(token):
+    email = confirm_reset_token(token)
+    
+    if not email:
+        return jsonify({"msg": "The reset link is invalid or has expired"}), 400
+
+    # Fetch the user and mark reset as confirmed
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        return jsonify({"msg": "User not found"}), 404
+
+    user.reset_confirmed = True
+    db.session.commit()
+
+    return jsonify({"msg": "Password reset confirmed. You may now set a new password."}), 200
+
+
+# Check if password reset is confirmed (for app polling)
+@app.route('/checkPasswordResetConfirmed', methods=['GET'])
+def check_password_reset_confirmed():
+    email = request.args.get('email')
+    user = User.query.filter_by(email=email).first()
+    if user and user.reset_confirmed:
+        return jsonify(True), 200
+    return jsonify(False), 404
+
+
+
+@app.route('/set-new-password', methods=['POST'])
+def set_new_password():
+    data = request.get_json()
+    print("Received data:", data)  # Log received data for debugging
+    email = data.get('email')
+    new_password = data.get('password')
+
+    # Validate inputs
+    if not email or not new_password:
+        return jsonify({"msg": "Email and password are required"}), 400
+
+    # Fetch the user and ensure reset has been confirmed
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        return jsonify({"msg": "User not found"}), 404
+
+    if not user.reset_confirmed:
+        return jsonify({"msg": "Password reset has not been confirmed"}), 400
+
+    # Update the password
+    hashed_password = bcrypt.generate_password_hash(new_password).decode('utf-8')
+    user.password = hashed_password
+    user.reset_confirmed = False  # Reset the confirmation flag
+    db.session.commit()
+
+    return jsonify({"msg": "Password has been updated"}), 200
 
 
 # Check if admin user exists and create if not
