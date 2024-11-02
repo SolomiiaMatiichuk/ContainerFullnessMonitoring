@@ -35,6 +35,7 @@ import androidx.work.WorkManager;
 import com.example.myapplication.R;
 import com.example.myapplication.databinding.FragmentHomeBinding;
 import com.github.mikephil.charting.components.XAxis;
+import com.github.mikephil.charting.components.YAxis;
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapView;
@@ -409,15 +410,14 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
     }
 
     private void displayFullnessPlot(List<Fullness> fullnessDataList, double containerLength) {
-        // Create a line chart to display fullness data
+        // Set up chart visibility and background color
         chart.setVisibility(View.VISIBLE);
         chart.setBackgroundColor(Color.WHITE);
 
-
-
+        // Initialize fullness data map
         fullnessDataMap = new HashMap<>();
         for (Fullness data : fullnessDataList) {
-            Date date = truncateTime(data.getTimestamp()); // Truncate time
+            Date date = truncateTime(data.getTimestamp()); // Remove time from date
             if (!fullnessDataMap.containsKey(date)) {
                 fullnessDataMap.put(date, new ArrayList<>());
             }
@@ -425,8 +425,8 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
         }
         current_container_length = containerLength;
 
+        // Show plot for the current date
         showPlot();
-
     }
 
     private void showPlot() {
@@ -434,50 +434,99 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
         List<Entry> entries = new ArrayList<>();
 
         if (dateFullness != null) {
+            List<Fullness> filteredData = new ArrayList<>();
 
-            for (Fullness data : dateFullness) {
-                // Normalize timestamp to minutes of the day
-                long minutes = (data.getTimestamp().getHours() * 60 + data.getTimestamp().getMinutes()) % 1440;
-                entries.add(new Entry((minutes), (float) (((current_container_length - data.getFullness()) / current_container_length) * 100.0)));
+            // Retain the first point
+            if (!dateFullness.isEmpty()) {
+                filteredData.add(dateFullness.get(0));
             }
 
-            // Sort entries by minutes value
-            Collections.sort(entries, new Comparator<Entry>() {
-                @Override
-                public int compare(Entry entry1, Entry entry2) {
-                    return Float.compare(entry1.getX(), entry2.getX());
+            // Filter out points with less than 1% change in fullness
+            for (int i = 1; i < dateFullness.size() - 1; i++) {
+                double prevFullness = ((current_container_length - dateFullness.get(i - 1).getFullness()) / current_container_length) * 100.0;
+                double currentFullness = ((current_container_length - dateFullness.get(i).getFullness()) / current_container_length) * 100.0;
+
+                if (Math.abs(currentFullness - prevFullness) >= 1.0) {
+                    filteredData.add(dateFullness.get(i));
                 }
-            });
+            }
+
+            // Retain the last point
+            if (!dateFullness.isEmpty()) {
+                filteredData.add(dateFullness.get(dateFullness.size() - 1));
+            }
+
+            // Populate entries for the chart
+            for (Fullness data : filteredData) {
+                long minutes = (data.getTimestamp().getHours() * 60 + data.getTimestamp().getMinutes()) % 1440;
+                float fullnessPercentage = (float) (((current_container_length - data.getFullness()) / current_container_length) * 100.0);
+                entries.add(new Entry(minutes, fullnessPercentage));
+            }
+
+            // Add the current time entry with the last fullness value
+            if (!filteredData.isEmpty()) {
+                Fullness lastFullness = filteredData.get(0);
+                Calendar calendar = Calendar.getInstance();
+                long currentMinutes = calendar.get(Calendar.HOUR_OF_DAY) * 60 + calendar.get(Calendar.MINUTE);
+                float lastFullnessPercentage = (float) (((current_container_length - lastFullness.getFullness()) / current_container_length) * 100.0);
+                entries.add(new Entry(currentMinutes, lastFullnessPercentage));
+            }
+
+            // Sort entries by time (X-axis)
+            entries.sort(Comparator.comparing(Entry::getX));
         }
 
-
         LineDataSet dataSet = new LineDataSet(entries, "Fullness Data");
-        LineData lineData = new LineData(dataSet);
+        dataSet.setColor(Color.BLUE);
+        dataSet.setCircleColor(Color.RED);
+        dataSet.setLineWidth(2f);
+        dataSet.setCircleRadius(4f);
+        dataSet.setDrawValues(false);
 
+        LineData lineData = new LineData(dataSet);
         chart.setData(lineData);
 
-        //Description description = new Description();
-        //description.setText("Fullness Data Plot");
-        //chart.setDescription(description);
+        // Set the custom marker view
+        CustomMarkerView markerView = new CustomMarkerView(getContext(), R.layout.marker_view);
+        chart.setMarker(markerView);
 
+        // Customize X-axis
+        XAxis xAxis = chart.getXAxis();
+        xAxis.setAxisMinimum(0);
+        xAxis.setAxisMaximum(1440);
+        xAxis.setValueFormatter(new TimeValueFormatter());
+        xAxis.setGranularity(1);
+        xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
 
-        // Set X-axis range
-        chart.getXAxis().setAxisMinimum(0);
-        chart.getXAxis().setAxisMaximum(1440);
-        chart.getXAxis().setValueFormatter(new TimeValueFormatter());
-        chart.getXAxis().setGranularityEnabled(true);
-        chart.getXAxis().setGranularity(1);
-        chart.getXAxis().setPosition(XAxis.XAxisPosition.BOTTOM);
-
-        // Set Y-axis range
-        chart.getAxisLeft().setAxisMinimum(0);
-        chart.getAxisLeft().setAxisMaximum(100);
-        chart.getAxisLeft().setGranularity(1);
-
+        // Customize Y-axis and lock it from panning
+        YAxis leftAxis = chart.getAxisLeft();
+        leftAxis.setAxisMinimum(0);
+        leftAxis.setAxisMaximum(100);
+        leftAxis.setGranularity(10);
         chart.getAxisRight().setEnabled(false);
 
-        chart.invalidate(); // refresh
+        chart.setScaleYEnabled(false);
+        chart.setScaleXEnabled(true);
+        chart.setDragEnabled(true);
+
+        // Set initial zoom so the last visible X (right side) is current time
+        if (!entries.isEmpty()) {
+            float currentMinutes = (float) (Calendar.getInstance().get(Calendar.HOUR_OF_DAY) * 60 + Calendar.getInstance().get(Calendar.MINUTE));
+            float visibleRangeX = 180f;
+
+            chart.fitScreen();
+            chart.zoom(1440f / visibleRangeX, 1f, 0, 0);
+
+            chart.moveViewToX(currentMinutes - visibleRangeX / 2);
+        }
+
+        chart.getDescription().setEnabled(false);
+        chart.invalidate();
     }
+
+
+
+
 
     private boolean isToday(Date date) {
         Calendar today = Calendar.getInstance();
