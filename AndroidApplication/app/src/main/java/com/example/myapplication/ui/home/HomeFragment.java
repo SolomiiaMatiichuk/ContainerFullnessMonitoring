@@ -8,6 +8,8 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 
 import androidx.core.app.NotificationCompat;
@@ -34,6 +36,7 @@ import androidx.work.WorkManager;
 
 import com.example.myapplication.R;
 import com.example.myapplication.databinding.FragmentHomeBinding;
+import com.github.mikephil.charting.components.LimitLine;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.components.YAxis;
 import com.google.android.gms.maps.CameraUpdate;
@@ -483,8 +486,20 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
         dataSet.setCircleRadius(4f);
         dataSet.setDrawValues(false);
 
+        // Apply Fill to create a background gradient
+        dataSet.setDrawFilled(true);
+        if (Build.VERSION.SDK_INT >= 18) { // Fill background only supported on API level 18 and above
+            dataSet.setFillDrawable(createGradientDrawable());
+        } else {
+            dataSet.setFillColor(Color.LTGRAY); // Fallback for lower API levels
+        }
+
         LineData lineData = new LineData(dataSet);
         chart.setData(lineData);
+
+        chart.setDrawGridBackground(true);  // Enable grid background
+        chart.setGridBackgroundColor(Color.parseColor("#E6E6E6")); // Light gray background color
+
 
         // Remove the legend
         chart.getLegend().setEnabled(false);
@@ -500,14 +515,14 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
         xAxis.setValueFormatter(new TimeValueFormatter());
         xAxis.setGranularity(1);
         xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
-        xAxis.setTextSize(14f);
+        xAxis.setTextSize(14f); // Increase text size for X-axis
 
         // Customize Y-axis and lock it from panning
         YAxis leftAxis = chart.getAxisLeft();
         leftAxis.setAxisMinimum(0);
         leftAxis.setAxisMaximum(100);
         leftAxis.setGranularity(10);
-        leftAxis.setTextSize(14f);
+        leftAxis.setTextSize(14f); // Increase text size for Y-axis
         chart.getAxisRight().setEnabled(false);
 
         chart.setScaleYEnabled(false);
@@ -515,7 +530,7 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
         chart.setDragEnabled(true);
 
         // Add extra bottom offset for padding
-        chart.setExtraBottomOffset(10f);
+        chart.setExtraBottomOffset(10f); // Adjust as needed for your layout
 
         // Set initial zoom so the last visible X (right side) is current time
         if (!entries.isEmpty()) {
@@ -530,6 +545,14 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
 
         chart.getDescription().setEnabled(false);
         chart.invalidate();
+    }
+
+    private Drawable createGradientDrawable() {
+        GradientDrawable gradientDrawable = new GradientDrawable(
+                GradientDrawable.Orientation.BOTTOM_TOP,
+                new int[]{Color.parseColor("#8000FF00"), Color.parseColor("#80FFFF00"), Color.parseColor("#80FF0000")});
+        gradientDrawable.setGradientType(GradientDrawable.LINEAR_GRADIENT);
+        return gradientDrawable;
     }
 
 
