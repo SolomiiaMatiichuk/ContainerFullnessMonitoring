@@ -105,7 +105,7 @@ public class BluetoothFragment extends Fragment implements AdapterView.OnItemCli
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
             if (BluetoothAdapter.ACTION_DISCOVERY_STARTED.equals(action)) {
-                Toast.makeText(getContext(), "Discovery Started", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), "Розпочато пошук...", Toast.LENGTH_SHORT).show();
             } else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)) {
               //  Toast.makeText(getContext(), "Discovery Finished", Toast.LENGTH_SHORT).show();
             } else if (BluetoothDevice.ACTION_FOUND.equals(action)) {
@@ -146,7 +146,7 @@ public class BluetoothFragment extends Fragment implements AdapterView.OnItemCli
 
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if (bluetoothAdapter == null) {
-            Toast.makeText(getContext(), "Bluetooth is not supported on this device", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(), "Блютуз не підтримується на даному пристрої", Toast.LENGTH_SHORT).show();
             getActivity().finish();
             return view;
         }
@@ -222,7 +222,7 @@ public class BluetoothFragment extends Fragment implements AdapterView.OnItemCli
             outputStream = bluetoothSocket.getOutputStream();
             InputStream inputStream = bluetoothSocket.getInputStream();
 
-            Toast.makeText(getContext(), "Connected to " + device.getName(), Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(), "Під'єднано до " + device.getName(), Toast.LENGTH_SHORT).show();
             dataActiveButton.setEnabled(true);
             sendWifiDataButton.setEnabled(true);
             sendGPSDataButton.setEnabled(true);
@@ -589,7 +589,7 @@ public class BluetoothFragment extends Fragment implements AdapterView.OnItemCli
             if (bluetoothSocket != null) {
                 bluetoothSocket.close();
             }
-            Toast.makeText(getContext(), "Disconnected", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(), "Від'єднано", Toast.LENGTH_SHORT).show();
             dataActiveButton.setEnabled(false);
             sendWifiDataButton.setEnabled(false);
             sendGPSDataButton.setEnabled(false);

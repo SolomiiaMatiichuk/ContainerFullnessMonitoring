@@ -3,7 +3,25 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
+    android:background="@drawable/transperent_bg"
     android:padding="16dp">
+
+
+    <TextView
+        android:id="@+id/text_welcome"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="20dp"
+        android:layout_marginBottom="10dp"
+        android:gravity="center"
+        android:letterSpacing="0.05"
+
+        android:text="Введіть дані для входу"
+        android:textColor="#AC743D"
+
+        android:textSize="22sp"
+        android:textStyle="bold" />
 
     <EditText
         android:id="@+id/editTextUsername"
@@ -18,18 +36,28 @@
         android:hint="Пароль"
         android:inputType="textPassword" />
 
+
+
+
     <Button
         android:id="@+id/buttonLogin"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:text="Ввійти" />
+        android:layout_marginTop="350dp"
+        android:backgroundTint="#4CAF50"
+        android:elevation="5dp"
+        android:padding="12dp"
+        android:text="Ввійти"
+        android:textColor="#FFFFFF" />
 
-    <!-- Forgot Password Button -->
     <Button
         android:id="@+id/buttonForgotPassword"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:text="Забули пароль?" />
+        android:text="Забули пароль?"
+        android:backgroundTint="#FF5722"
+        android:textColor="#FFFFFF"
+        android:elevation="5dp"
+        android:padding="12dp"/>
 </LinearLayout>

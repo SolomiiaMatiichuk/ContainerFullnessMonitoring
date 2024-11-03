@@ -30,7 +30,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="ВІДНОВИТИ надходження даних"
-        android:backgroundTint="#FF018786"
+        android:backgroundTint="#44443c"
         android:enabled="false"
         android:visibility="gone"/>
 
@@ -39,7 +39,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Надіслати дані Wi-Fi"
-        android:backgroundTint="#FF018786"
+        android:backgroundTint="#44443c"
         android:enabled="false"
         android:visibility="gone"/>
 
@@ -48,7 +48,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Надіслати геолокацію"
-        android:backgroundTint="#FF018786"
+        android:backgroundTint="#44443c"
         android:enabled="false"
         android:visibility="gone"/>
 
@@ -57,7 +57,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Відкалібрувати"
-        android:backgroundTint="#FF018786"
+        android:backgroundTint="#44443c"
         android:enabled="false"
         android:visibility="gone"/>
 
@@ -66,7 +66,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Надіслати ID користувача"
-        android:backgroundTint="#FF018786"
+        android:backgroundTint="#44443c"
         android:enabled="false"
         android:visibility="gone"/>
 
@@ -75,7 +75,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Від'єднатися"
-        android:backgroundTint="#FF018786"
+        android:backgroundTint="#44443c"
         android:enabled="false"
         android:visibility="gone"/>
 

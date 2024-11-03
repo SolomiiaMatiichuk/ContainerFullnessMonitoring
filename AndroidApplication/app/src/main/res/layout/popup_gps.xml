@@ -9,21 +9,22 @@
         android:id="@+id/latitude"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Latitude"
+        android:hint="Широта"
         android:inputType="numberDecimal" />
 
     <EditText
         android:id="@+id/longitude"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Longitude"
+        android:hint="Довгота"
         android:inputType="numberDecimal" />
 
     <Button
         android:id="@+id/selectOnMapButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Select on Map" />
+        android:layout_gravity="center"
+        android:text="Вибрати на карті" />
 
 
 </LinearLayout>

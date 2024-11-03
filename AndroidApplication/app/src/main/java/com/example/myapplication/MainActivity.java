@@ -17,6 +17,7 @@ import com.google.android.material.navigation.NavigationView;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.appcompat.app.AppCompatDelegate;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
@@ -74,13 +75,13 @@ public class MainActivity extends AppCompatActivity {
                                 Manifest.permission.ACCESS_COARSE_LOCATION,false);
                         if (fineLocationGranted != null && fineLocationGranted) {
                             //
-                            Toast.makeText(this, "Precise location access granted.", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(this, "Доступ до точної геолокації надано.", Toast.LENGTH_SHORT).show();
                         } else if (coarseLocationGranted != null && coarseLocationGranted) {
                             // Only approximate location access granted.
-                            Toast.makeText(this, "Only approximate location access granted.", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(this, "Доступ до приблизної геолокації надано..", Toast.LENGTH_SHORT).show();
                         } else {
                             // No location access granted.
-                            Toast.makeText(this, "No location access granted.", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(this, "Немає доступу до геолокації.", Toast.LENGTH_SHORT).show();
                         }
                     }
             );
@@ -105,6 +106,8 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
+        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
         super.onCreate(savedInstanceState);
 
         binding = ActivityMainBinding.inflate(getLayoutInflater());
@@ -146,17 +149,17 @@ public class MainActivity extends AppCompatActivity {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
         }
-        locationPermissionRequest.launch(new String[] {
-                Manifest.permission.ACCESS_FINE_LOCATION,
-                Manifest.permission.ACCESS_COARSE_LOCATION
-        });
-
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            Toast.makeText(this, "NO LOCATION PERMISSIONS", Toast.LENGTH_SHORT).show();
-        }
-
-
-        checkPermissions();
+//        locationPermissionRequest.launch(new String[] {
+//                Manifest.permission.ACCESS_FINE_LOCATION,
+//                Manifest.permission.ACCESS_COARSE_LOCATION
+//        });
+//
+//        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+//            Toast.makeText(this, "NO LOCATION PERMISSIONS", Toast.LENGTH_SHORT).show();
+//        }
+//
+//
+//        checkPermissions();
 
         setSupportActionBar(binding.appBarMain.toolbar);
 //        binding.appBarMain.fab.setOnClickListener(new View.OnClickListener() {

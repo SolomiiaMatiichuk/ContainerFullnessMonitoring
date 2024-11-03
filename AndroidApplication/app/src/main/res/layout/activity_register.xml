@@ -3,38 +3,68 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:background="@drawable/transperent_bg"
+    android:padding="16dp"
+    android:gravity="center_horizontal">
+
+    <TextView
+        android:id="@+id/text_welcome"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="5dp"
+        android:layout_marginBottom="15dp"
+        android:gravity="center"
+        android:letterSpacing="0.05"
+        android:text="Введіть дані для реєстрації"
+        android:textColor="#AC743D"
+        android:textSize="22sp"
+        android:textStyle="bold" />
 
     <EditText
         android:id="@+id/editTextEmail"
         android:layout_width="match_parent"
-        android:layout_height="76dp"
-        android:hint="Електронна пошта" />
+        android:layout_height="45dp"
+        android:hint="Електронна пошта"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp" />
 
     <EditText
         android:id="@+id/editTextUsername"
         android:layout_width="match_parent"
-        android:layout_height="70dp"
-        android:hint="Ім'я" />
+        android:layout_height="45dp"
+        android:hint="Ім'я"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:layout_marginTop="12dp" />
 
     <EditText
         android:id="@+id/editTextPassword"
         android:layout_width="match_parent"
-        android:layout_height="72dp"
+        android:layout_height="45dp"
         android:hint="Пароль"
-        android:inputType="textPassword" />
+        android:inputType="textPassword"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:layout_marginTop="12dp" />
 
     <EditText
         android:id="@+id/editTextConfirmPassword"
         android:layout_width="match_parent"
-        android:layout_height="85dp"
+        android:layout_height="45dp"
         android:hint="Повторіть пароль"
-        android:inputType="textPassword" />
+        android:inputType="textPassword"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:layout_marginTop="12dp" />
 
     <Button
         android:id="@+id/buttonRegister"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Зареєструватися"
-        android:layout_marginTop="16dp" />
+        android:layout_marginTop="250dp"
+        android:backgroundTint="#4CAF50"
+        android:elevation="5dp"
+        android:padding="12dp"
+        android:textColor="#FFFFFF" />
 </LinearLayout>

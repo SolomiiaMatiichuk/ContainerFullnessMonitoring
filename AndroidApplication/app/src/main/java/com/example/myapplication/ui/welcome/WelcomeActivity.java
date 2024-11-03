@@ -5,7 +5,10 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
+import android.view.WindowManager;
+
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatDelegate;
 
 import com.example.myapplication.MainActivity;
 import com.example.myapplication.R;
@@ -13,7 +16,17 @@ import com.example.myapplication.R;
 public class WelcomeActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
         super.onCreate(savedInstanceState);
+
+
+
+//        if (getSupportActionBar() != null) {
+//            getSupportActionBar().hide();
+//        }
+
+
+
 
         // Check if the user is logged in by checking for a stored token
         SharedPreferences prefs = getSharedPreferences("MyAppPrefs", MODE_PRIVATE);

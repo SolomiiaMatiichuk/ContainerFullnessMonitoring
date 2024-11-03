@@ -37,7 +37,7 @@
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="YOUR_API_KEY" />
+            android:value="AIzaSyDQ79dSnlFZNKWI8HVk-ggpr4G38_WKT8A" />
 
         <!-- WelcomeActivity as the launcher -->
         <activity
