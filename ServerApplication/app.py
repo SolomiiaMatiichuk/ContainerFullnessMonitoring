@@ -56,7 +56,7 @@ def send_email(recipient, subject, body):
 
     # Set up the MIME
     message = MIMEMultipart()
-    message['From'] = sender_email
+    message['From'] = "Container Monitoring System"
     message['To'] = recipient
     message['Subject'] = subject
     message.attach(MIMEText(body, 'plain'))
@@ -105,7 +105,7 @@ def forgot_password():
     reset_url = url_for('confirm_reset', token=token, _external=True)
     
     # Send email with reset link
-    send_email(email, "Reset Your Password", f"Click the link to reset your password: {reset_url}")
+    send_email(email, "Підтвердьте скидання паролю", f"Будь ласка, підтвердіть скидання паролю (ІГНОРУЙТЕ, ЯКЩО ВИ НЕ БАЖАЄТЕ СКИНУТИ ПАРОЛЬ): {reset_url}")
     
     return jsonify({"msg": "Password reset link has been sent to your email"}), 200
 
@@ -221,7 +221,7 @@ def register():
     confirm_url = url_for('confirm_email', token=token, username=username, password=hashed_password, _external=True)
 
     # Send confirmation email
-    send_email(email, 'Confirm Your Account', f'Please confirm your email by clicking this link: {confirm_url}')
+    send_email(email, 'Підтвердьте Ваш Акаунт', f'Будь ласка, підтвердьте ваш акаунт, перейшовши за посиланням: {confirm_url}')
 
     return jsonify({"msg": "Please check your email to confirm your account."}), 200
 
@@ -254,7 +254,7 @@ def login():
     user = User.query.filter_by(email=email).first()
     if user and bcrypt.check_password_hash(user.password, password):
         access_token = create_access_token(identity={'email': user.email, 'username': user.username, 'role': user.role})
-        return jsonify(access_token=access_token, real_name=user.username, email=user.email, role=user.role), 200
+        return jsonify(access_token=access_token, real_name=user.username, email=user.email, role=user.role, id=user.id), 200
     return jsonify({"msg": "Invalid credentials"}), 401
 
 
@@ -305,6 +305,13 @@ def receive_data():
     db.session.commit()
 
     return jsonify({'message': 'Data received and stored successfully'}), 201
+
+
+@app.route('/users', methods=['GET'])
+def get_all_users():
+    users = User.query.with_entities(User.id, User.email, User.username).all()
+    users_list = [{'id': user.id, 'email': user.email, 'username': user.username} for user in users]
+    return jsonify(users_list), 200
 
 
 @app.route('/user-containers/<int:user_id>', methods=['GET'])

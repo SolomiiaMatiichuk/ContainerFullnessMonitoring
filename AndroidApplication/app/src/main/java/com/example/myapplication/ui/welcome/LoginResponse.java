@@ -7,6 +7,8 @@ public class LoginResponse {
 
     private String role;
 
+    private String id;
+
     public String getAccessToken() {
         return access_token;
     }
@@ -25,5 +27,9 @@ public class LoginResponse {
     // Getter for role
     public String getRole() {
         return role;
+    }
+
+    public String getId() {
+        return id;
     }
 }

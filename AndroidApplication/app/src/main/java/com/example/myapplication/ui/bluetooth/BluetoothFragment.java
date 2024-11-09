@@ -44,6 +44,8 @@ import androidx.cardview.widget.CardView;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.myapplication.R;
 
@@ -51,7 +53,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class BluetoothFragment extends Fragment implements AdapterView.OnItemClickListener {
     private static final int REQUEST_ENABLE_BT = 1;
@@ -375,7 +382,7 @@ public class BluetoothFragment extends Fragment implements AdapterView.OnItemCli
         currentLengthTextView.append(res);
 
 
-        userIdTextView.setText("ID користувача: ");
+        userIdTextView.setText("ID користувачів: ");
         res = new SpannableString(userId);
         res.setSpan(new ForegroundColorSpan(Color.parseColor("#ADD8E6")), 0, res.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
         userIdTextView.append(res);
@@ -539,14 +546,19 @@ public class BluetoothFragment extends Fragment implements AdapterView.OnItemCli
 
     }
 
-
     private void showUserIdPopup() {
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
         builder.setTitle("Введіть id користувача");
 
         View viewInflated = LayoutInflater.from(getContext()).inflate(R.layout.popup_user_id, (ViewGroup) getView(), false);
 
+        RecyclerView userRecyclerView = viewInflated.findViewById(R.id.user_recycler_view);
+        userRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+
         final EditText userEditText = viewInflated.findViewById(R.id.user_id);
+
+        // Fetch users and set adapter with click listener
+        fetchUsers(userRecyclerView, userEditText);
 
         builder.setView(viewInflated);
 
@@ -559,6 +571,34 @@ public class BluetoothFragment extends Fragment implements AdapterView.OnItemCli
 
         builder.show();
     }
+
+    private void fetchUsers(RecyclerView userRecyclerView, EditText userEditText) {
+        ApiService apiService = ApiClient.getClient().create(ApiService.class);
+
+        Call<List<User>> call = apiService.getUsers();
+        call.enqueue(new Callback<List<User>>() {
+            @Override
+            public void onResponse(Call<List<User>> call, Response<List<User>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    List<User> users = response.body();
+                    UserAdapter adapter = new UserAdapter(users, user -> {
+                        // Set selected user ID in the EditText
+                        userEditText.setText(String.valueOf(user.getId()));
+                    });
+                    userRecyclerView.setAdapter(adapter);
+                } else {
+                    Toast.makeText(getContext(), "Помилка при отриманні користувачів", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<User>> call, Throwable t) {
+                Toast.makeText(getContext(), "Помилка: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+
 
     private void sendUserId() {
         showUserIdPopup();

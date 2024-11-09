@@ -70,6 +70,7 @@ public class LoginActivity extends AppCompatActivity {
                                     .putString("real_name", response.body().getRealName()) // Assuming getRealName() is available
                                     .putString("email", response.body().getEmail())       // Assuming getEmail() is available
                                     .putString("role", response.body().getRole())
+                                    .putString("id", response.body().getId())
                                     .apply();
 
                             // Navigate to MainActivity

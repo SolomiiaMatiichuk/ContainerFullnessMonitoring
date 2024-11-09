@@ -38,8 +38,8 @@ const char* serverUrlGps = "https://container-monitoring-server-5e33a8983798.her
 
 // Define NTP Client to get time
 const char* ntpServer = "pool.ntp.org";
-const long gmtOffset_sec = 0;
-const int daylightOffset_sec = 7200;
+const long gmtOffset_sec = 7200;
+const int daylightOffset_sec = 0;
 
 
 BluetoothSerial SerialBT;
@@ -480,6 +480,9 @@ void loop() {
             if (!getLocalTime(&timeinfo)) {
               Serial.println("Failed to obtain time");
               configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+
+              disconnectWiFi();
+              enableBluetooth();
               return;
             }
             Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");

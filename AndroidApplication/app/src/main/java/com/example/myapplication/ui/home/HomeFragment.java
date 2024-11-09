@@ -1,6 +1,9 @@
 package com.example.myapplication.ui.home;
 
 
+import static android.content.Context.MODE_PRIVATE;
+import static java.lang.Integer.parseInt;
+
 import android.app.AlertDialog;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -130,6 +133,8 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
 
         WorkManager.getInstance(getContext()).enqueue(fullnessCheckRequest);
 
+        fetchContainerData();
+
        // createNotificationChannel();
 
         return rootView;
@@ -173,9 +178,12 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
                 .client(new OkHttpClient())
                 .build();
 
+        SharedPreferences prefs = getActivity().getSharedPreferences("MyAppPrefs", MODE_PRIVATE);
+        String id = prefs.getString("id", "1");
+
 
         ApiService apiService = retrofit.create(ApiService.class);
-        Call<List<Container>> call = apiService.getUserContainers(1); // Hardcoded user_id for now
+        Call<List<Container>> call = apiService.getUserContainers(parseInt(id)); // Hardcoded user_id for now
 
         call.enqueue(new Callback<List<Container>>() {
             @Override
@@ -250,7 +258,7 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
     }
 
     private boolean isNotificationsEnabled(Context context) {
-        SharedPreferences sharedPreferences = context.getSharedPreferences("Settings", Context.MODE_PRIVATE);
+        SharedPreferences sharedPreferences = context.getSharedPreferences("Settings", MODE_PRIVATE);
         return sharedPreferences.getBoolean("notifications_enabled", false);
 
     }
@@ -344,7 +352,7 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
         String strDate = dateFormat.format(current_date);
         textview.setText(strDate);
 
-        int containerId = Integer.parseInt(marker.getSnippet().split(",")[0].split(": ")[1]);
+        int containerId = parseInt(marker.getSnippet().split(",")[0].split(": ")[1]);
         double containerLength = Double.parseDouble(marker.getSnippet().split(",")[1].split(": ")[1]);
         double latestDistance = Double.parseDouble(marker.getSnippet().split(",")[2].split(": ")[1]);
         showFullnessPlot(containerId, containerLength);
@@ -366,6 +374,7 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
         });
 
         btnNext.setEnabled(false);
+        setButtonTransparency(btnNext, false);
     }
 
 
@@ -466,13 +475,28 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
                 entries.add(new Entry(minutes, fullnessPercentage));
             }
 
-            // Add the current time entry with the last fullness value
-            if (!filteredData.isEmpty()) {
-                Fullness lastFullness = filteredData.get(0);
-                Calendar calendar = Calendar.getInstance();
-                long currentMinutes = calendar.get(Calendar.HOUR_OF_DAY) * 60 + calendar.get(Calendar.MINUTE);
-                float lastFullnessPercentage = (float) (((current_container_length - lastFullness.getFullness()) / current_container_length) * 100.0);
-                entries.add(new Entry(currentMinutes, lastFullnessPercentage));
+
+            if (isToday(filteredData.get(0).getTimestamp())) {
+
+                // Add the current time entry with the last fullness value
+                if (!filteredData.isEmpty()) {
+                    Fullness lastFullness = filteredData.get(0);
+                    Calendar calendar = Calendar.getInstance();
+                    long currentMinutes = calendar.get(Calendar.HOUR_OF_DAY) * 60 + calendar.get(Calendar.MINUTE);
+                    float lastFullnessPercentage = (float) (((current_container_length - lastFullness.getFullness()) / current_container_length) * 100.0);
+                    entries.add(new Entry(currentMinutes, lastFullnessPercentage));
+                }
+            }
+            else
+            {
+                // Add the current time entry with the last fullness value
+                if (!filteredData.isEmpty()) {
+                    Fullness lastFullness = filteredData.get(0);
+                    Calendar calendar = Calendar.getInstance();
+                    long endOfDayMinutes = 1440; // 24:00 in minutes
+                    float lastFullnessPercentage = (float) (((current_container_length - lastFullness.getFullness()) / current_container_length) * 100.0);
+                    entries.add(new Entry(endOfDayMinutes, lastFullnessPercentage));
+                }
             }
 
             // Sort entries by time (X-axis)
@@ -556,7 +580,14 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
     }
 
 
-
+    // Method to set transparency for a button when disabled
+    private void setButtonTransparency(Button button, boolean enabled) {
+        if (enabled) {
+            button.setAlpha(1f);  // Fully opaque when enabled
+        } else {
+            button.setAlpha(0.7f);  // 50% transparent when disabled
+        }
+    }
 
 
 
@@ -585,6 +616,7 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
 
 
         btnNext.setEnabled(!isToday(current_date));
+        setButtonTransparency(btnNext, !isToday(current_date));
 
         showPlot();
     }
