@@ -1,5 +1,6 @@
 package com.example.myapplication.ui.bluetooth;
 
+import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -9,14 +10,16 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.myapplication.R;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder> {
     private List<User> userList;
+    private List<User> selectedUsers = new ArrayList<>();
     private OnItemClickListener onItemClickListener;
 
     public interface OnItemClickListener {
-        void onItemClick(User user);
+        void onItemClick(List<User> selectedUsers);
     }
 
     public UserAdapter(List<User> userList, OnItemClickListener onItemClickListener) {
@@ -49,8 +52,19 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
         holder.emailView.setText(user.getEmail());
         holder.usernameView.setText(user.getUsername());
 
-        // Handle item click
-        holder.itemView.setOnClickListener(v -> onItemClickListener.onItemClick(user));
+        // Highlight selected users
+        holder.itemView.setBackgroundColor(selectedUsers.contains(user) ? Color.LTGRAY : Color.WHITE);
+
+        // Toggle selection
+        holder.itemView.setOnClickListener(v -> {
+            if (selectedUsers.contains(user)) {
+                selectedUsers.remove(user);
+            } else {
+                selectedUsers.add(user);
+            }
+            notifyDataSetChanged();
+            onItemClickListener.onItemClick(selectedUsers);
+        });
     }
 
     @Override
@@ -58,4 +72,5 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
         return userList.size();
     }
 }
+
 

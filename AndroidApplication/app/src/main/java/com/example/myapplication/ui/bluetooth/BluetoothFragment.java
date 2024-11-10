@@ -26,6 +26,7 @@ import android.os.Message;
 import android.provider.Settings;
 import android.text.Spannable;
 import android.text.SpannableString;
+import android.text.TextUtils;
 import android.text.style.ForegroundColorSpan;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -310,7 +311,7 @@ public class BluetoothFragment extends Fragment implements AdapterView.OnItemCli
         for (String line : lines) {
             // Оновлення конфігурації пристрою
             if (line.startsWith("CONFIG:")) {
-                String[] parts = line.split(",");
+                String[] parts = line.split(";");
                 wifiConnected = parts[1].split(":")[1].trim();
                 gpsConfigured = parts[2].split(":")[1].trim();
                 containerLength = parts[3].split(":")[1].trim();
@@ -546,33 +547,49 @@ public class BluetoothFragment extends Fragment implements AdapterView.OnItemCli
 
     }
 
+
+    private List<User> selectedUsers = new ArrayList<>(); // Define selectedUsers here
+
+
     private void showUserIdPopup() {
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
-        builder.setTitle("Введіть id користувача");
+        builder.setTitle("Виберіть користувачів");
 
         View viewInflated = LayoutInflater.from(getContext()).inflate(R.layout.popup_user_id, (ViewGroup) getView(), false);
-
         RecyclerView userRecyclerView = viewInflated.findViewById(R.id.user_recycler_view);
         userRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 
-        final EditText userEditText = viewInflated.findViewById(R.id.user_id);
+        // Parse `userId` to get the list of already selected user IDs
+        List<Integer> selectedUserIds = new ArrayList<>();
+        if (userId != null && !userId.isEmpty()) {
+            for (String id : userId.split(",")) {
+                selectedUserIds.add(Integer.parseInt(id.trim()));
+            }
+        }
 
-        // Fetch users and set adapter with click listener
-        fetchUsers(userRecyclerView, userEditText);
+        fetchUsers(userRecyclerView, selectedUserIds);
 
         builder.setView(viewInflated);
 
         builder.setPositiveButton(android.R.string.ok, (dialog, which) -> {
-            String user_id = userEditText.getText().toString().trim();
-            String data = "user_id: " + user_id;
-            sendData(data);
-        });
-        builder.setNegativeButton(android.R.string.cancel, (dialog, which) -> dialog.cancel());
+            List<Integer> userIds = new ArrayList<>();
+            for (User user : selectedUsers) { // Now accessible as a member variable
+                userIds.add(user.getId());
+            }
 
+            // Join userIds into a comma-separated string
+            String userIdsString = TextUtils.join(",", userIds);
+
+            // Prepare data to be sent
+            String data = "user_id: " + userIdsString;
+            sendData(data);  // send data with comma-separated user IDs
+        });
+
+        builder.setNegativeButton(android.R.string.cancel, (dialog, which) -> dialog.cancel());
         builder.show();
     }
 
-    private void fetchUsers(RecyclerView userRecyclerView, EditText userEditText) {
+    private void fetchUsers(RecyclerView userRecyclerView, List<Integer> selectedUserIds) {
         ApiService apiService = ApiClient.getClient().create(ApiService.class);
 
         Call<List<User>> call = apiService.getUsers();
@@ -581,22 +598,35 @@ public class BluetoothFragment extends Fragment implements AdapterView.OnItemCli
             public void onResponse(Call<List<User>> call, Response<List<User>> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     List<User> users = response.body();
-                    UserAdapter adapter = new UserAdapter(users, user -> {
-                        // Set selected user ID in the EditText
-                        userEditText.setText(String.valueOf(user.getId()));
+
+                    // Create a list of preselected users
+                    List<User> preselectedUsers = new ArrayList<>();
+                    for (User user : users) {
+                        if (selectedUserIds.contains(user.getId())) {
+                            preselectedUsers.add(user);
+                        }
+                    }
+
+                    selectedUsers.clear();  // Ensure selectedUsers list is up-to-date
+                    selectedUsers.addAll(preselectedUsers);
+
+                    UserAdapter adapter = new UserAdapter(users, updatedSelectedUsers -> {
+                        selectedUsers.clear();
+                        selectedUsers.addAll(updatedSelectedUsers);
                     });
                     userRecyclerView.setAdapter(adapter);
                 } else {
-                    Toast.makeText(getContext(), "Помилка при отриманні користувачів", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(), "Failed to fetch users", Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
             public void onFailure(Call<List<User>> call, Throwable t) {
-                Toast.makeText(getContext(), "Помилка: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }
+
 
 
 

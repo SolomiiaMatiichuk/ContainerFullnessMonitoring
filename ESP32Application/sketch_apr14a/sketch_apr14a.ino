@@ -22,7 +22,7 @@ char lat[32];
 char lon[32];
 
 // default user id
-int user_id = 1;
+String user_ids = "74";
 
 
 bool bluetoothConnected = false;
@@ -35,6 +35,8 @@ String device_name = "MONITORING_DEVICE_74565";
 const char* serverUrl = "https://container-monitoring-server-5e33a8983798.herokuapp.com/data-endpoint";
 
 const char* serverUrlGps = "https://container-monitoring-server-5e33a8983798.herokuapp.com/update-container-location/74565";
+
+const char* serverUrlUserIds = "https://container-monitoring-server-5e33a8983798.herokuapp.com/update-container-user-ids/74565";
 
 // Define NTP Client to get time
 const char* ntpServer = "pool.ntp.org";
@@ -53,6 +55,7 @@ unsigned long lastDistanceUpdate = 0;
 bool timeConfigured = false;
 bool data_send_successfully = false;
 bool gps_data_send_successfully = false;
+bool user_id_data_send_successfully = false;
 bool waitForUpdate = false;
 
 float container_length = 30;
@@ -83,6 +86,15 @@ bool loadGPSSettings() {
 void saveGPSsettings(const char* lat, const char* lon) {
   preferences.putString("lat", lat);
   preferences.putString("lon", lon);
+}
+
+
+void loadUserIds() {
+  user_ids = preferences.getString("user_ids", "74");
+}
+
+void saveUserIds(String ids) {
+  preferences.putString("user_ids", ids);
 }
 
 
@@ -131,6 +143,46 @@ void sendGPSData() {
       Serial.println("Error sending PUT request");
       Serial.println("HTTP Response code: " + String(httpResponseCode));
       gps_data_send_successfully = false;
+    }
+
+    http.end();
+
+    enableBluetooth();
+  } else {
+    Serial.println("Wifi connection error");
+  }
+
+  disconnectWiFi();
+  enableBluetooth();
+}
+
+
+
+void sendUserIdData() {
+
+  disableBluetooth();
+  connectToWiFi();
+  if (WiFi.status() == WL_CONNECTED) {
+
+    // Create JSON payload
+    String jsonPayload = "{\"user_ids\": \"" + String(user_ids) + "\"}";
+    Serial.println(jsonPayload);
+
+    // Send HTTP PUT request to server
+    http.begin(serverUrlUserIds);
+    http.addHeader("Content-Type", "application/json");
+    http.setTimeout(15000);
+    int httpResponseCode = http.PUT(jsonPayload);
+
+    if (httpResponseCode > 0) {
+      String response = http.getString();
+      Serial.println("HTTP Response code: " + String(httpResponseCode));
+      Serial.println("Server response: " + response);
+      user_id_data_send_successfully = true;
+    } else {
+      Serial.println("Error sending PUT request");
+      Serial.println("HTTP Response code: " + String(httpResponseCode));
+      user_id_data_send_successfully = false;
     }
 
     http.end();
@@ -240,6 +292,8 @@ void setup() {
   loadLengthSettings();
   loadUpdateSettings();
 
+  loadUserIds();
+
 
   if (loadGPSSettings()) {
     gpsConfigured = true;
@@ -289,7 +343,7 @@ float getDistance() {
 
 
 void sendConfigData() {
-  String config_data = "CONFIG:,wifi:" + String(wifiConfigured) + ",gps:" + String(gpsConfigured) + ",length:" + String(container_length) + ",user_id:" + String(user_id) + ",data_active:" + String(update_data);
+  String config_data = "CONFIG:;wifi:" + String(wifiConfigured) + ";gps:" + String(gpsConfigured) + ";length:" + String(container_length) + ";user_id:" + String(user_ids) + ";data_active:" + String(update_data);
   SerialBT.println(config_data);
 }
 
@@ -367,11 +421,14 @@ void parseData(String data) {
     data.remove(0, 8);  // Remove "user_id:" prefix
     data.trim();
 
-    user_id = data.toInt();
-    Serial.print("User ID: ");
-    Serial.println(user_id);
-    SerialBT.print("Дані про id користувача надіслані успішно! Тепер id користувача = ");
-    SerialBT.println(user_id);
+    user_ids = data;
+    saveUserIds(user_ids);
+    Serial.print("User IDs: ");
+    Serial.println(user_ids);
+    SerialBT.print("Дані про id користувачів надіслані успішно! Тепер контейнер доступний наступним користувачам ");
+    SerialBT.println(user_ids);
+
+    user_id_data_send_successfully = false;
 
     sendConfigData();
   } else if (data.startsWith("GET_CONFIG")) {
@@ -459,69 +516,74 @@ void loop() {
           gpsConfigured = true;
         }
 
-
-        // Send data if distance changes more than 2.5 cm
-        if (abs(distance - lastDistance) > 2.5) {
-          lastDistanceUpdate = millis();
-          lastDistance = distance;
-          waitForUpdate = true;
+        if (user_id_data_send_successfully == false) {
+          sendUserIdData();
         }
 
-        else if ((waitForUpdate == true && (abs(distance - lastDistance) <= 2.5) && (currentTime - lastDistanceUpdate > 10000)) || (data_send_successfully == false)) {
-          waitForUpdate = false;
+        if (distance <= container_length) {
+          // Send data if distance changes more than 2.5 cm
+          if (abs(distance - lastDistance) > 2.5) {
+            lastDistanceUpdate = millis();
+            lastDistance = distance;
+            waitForUpdate = true;
+          }
 
-          disableBluetooth();
-          connectToWiFi();
+          else if ((waitForUpdate == true && (abs(distance - lastDistance) <= 2.5) && (currentTime - lastDistanceUpdate > 10000)) || (data_send_successfully == false)) {
+            waitForUpdate = false;
 
-          if (WiFi.status() == WL_CONNECTED) {
+            disableBluetooth();
+            connectToWiFi();
 
-
-            struct tm timeinfo;
-            if (!getLocalTime(&timeinfo)) {
-              Serial.println("Failed to obtain time");
-              configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
-
-              disconnectWiFi();
-              enableBluetooth();
-              return;
-            }
-            Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
-            Serial.println();
-
-            // Format timestamp
-            char formattedTime[20];
-            strftime(formattedTime, sizeof(formattedTime), "%Y-%m-%d %H:%M:%S", &timeinfo);
-
-            // Create JSON payload
-            String jsonPayload = "{\"user_id\": " + String(user_id) + ", \"container_id\": " + String(container_id) + ", \"distance\": " + String(distance) + ", \"container_length\": " + String(container_length) + ", \"timestamp\": \"" + String(formattedTime) + "\"}";
+            if (WiFi.status() == WL_CONNECTED) {
 
 
-            // Send HTTP POST request to server
-            http.begin(serverUrl);
-            http.addHeader("Content-Type", "application/json");
-            http.setTimeout(15000);
-            int httpResponseCode = http.POST(jsonPayload);
+              struct tm timeinfo;
+              if (!getLocalTime(&timeinfo)) {
+                Serial.println("Failed to obtain time");
+                configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
 
-            if (httpResponseCode > 0) {
-              String response = http.getString();
-              Serial.println("HTTP Response code: " + String(httpResponseCode));
-              Serial.println("Server response: " + response);
-              data_send_successfully = true;
+                disconnectWiFi();
+                enableBluetooth();
+                return;
+              }
+              Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
+              Serial.println();
+
+              // Format timestamp
+              char formattedTime[20];
+              strftime(formattedTime, sizeof(formattedTime), "%Y-%m-%d %H:%M:%S", &timeinfo);
+
+              // Create JSON payload
+              String jsonPayload = "{\"user_id\": \"" + String(user_ids) + "\", \"container_id\": " + String(container_id) + ", \"distance\": " + String(distance) + ", \"container_length\": " + String(container_length) + ", \"timestamp\": \"" + String(formattedTime) + "\"}";
+
+
+              // Send HTTP POST request to server
+              http.begin(serverUrl);
+              http.addHeader("Content-Type", "application/json");
+              http.setTimeout(15000);
+              int httpResponseCode = http.POST(jsonPayload);
+
+              if (httpResponseCode > 0) {
+                String response = http.getString();
+                Serial.println("HTTP Response code: " + String(httpResponseCode));
+                Serial.println("Server response: " + response);
+                data_send_successfully = true;
+              } else {
+                Serial.println("Error sending POST request");
+                Serial.println("HTTP Response code: " + String(httpResponseCode));
+                data_send_successfully = false;
+              }
+
+              http.end();
+
             } else {
-              Serial.println("Error sending POST request");
-              Serial.println("HTTP Response code: " + String(httpResponseCode));
+              Serial.println("WiFi not working!");
               data_send_successfully = false;
             }
 
-            http.end();
-
-          } else {
-            Serial.println("WiFi not working!");
-            data_send_successfully = false;
+            disconnectWiFi();
+            enableBluetooth();
           }
-
-          disconnectWiFi();
-          enableBluetooth();
         }
 
         delay(2000);  // update data every 2 seconds

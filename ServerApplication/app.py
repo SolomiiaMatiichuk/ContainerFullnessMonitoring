@@ -35,13 +35,12 @@ class User(db.Model):
 
 class Container(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user_ids = db.Column(db.String(255), nullable=False)  # Comma-separated list of user IDs
     name = db.Column(db.String(50), nullable=False)
     latitude = db.Column(db.Float, nullable=False)
     longitude = db.Column(db.Float, nullable=False)
     length = db.Column(db.Float, nullable=False)
     latest_distance = db.Column(db.Float, nullable=False)
-   # fullness_data = db.relationship('FullnessData', backref='container', lazy=True)
 
 class FullnessData(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -273,28 +272,26 @@ def receive_data():
     data = request.get_json()
     distance = data['distance']
     timestamp_str = data['timestamp']
-    user_id = data['user_id']
+    user_ids = data['user_id']  # Comma-separated string of user IDs
     container_id = data['container_id']
     container_length = data['container_length']
     timestamp = datetime.strptime(timestamp_str, "%Y-%m-%d %H:%M:%S")
 
-    # Save data to database
-    user = User.query.get(user_id)
-    if not user:
-        return jsonify({'error': 'User not found'}), 404
+    user_ids = f",{user_ids.strip()}," 
 
-    container = Container.query.filter_by(id=container_id, user_id=user_id).first()
+    # Check if container already exists
+    container = Container.query.filter_by(id=container_id).first()
     if not container:
         # Create a new container if not found
-        container = Container(user_id=user_id, id=container_id, name=f'Container_{container_id}', latitude=0.0,
+        container = Container(user_ids=user_ids, id=container_id, name=f'Container_{container_id}', latitude=0.0,
                               longitude=0.0, length=container_length, latest_distance=distance)
         db.session.add(container)
         db.session.commit()
     else:
-        # update latest_distance for existing container
+        # Update container data if it already exists
         container.latest_distance = distance
         container.length = container_length
-        container.user_id = user_id
+        container.user_ids = user_ids  # Update with the new user_ids string
         db.session.commit()
 
     fullness_data = FullnessData(container_id=container_id, fullness=distance, timestamp=timestamp)
@@ -320,8 +317,11 @@ def get_user_containers(user_id):
     if not user:
         return jsonify({'error': 'User not found'}), 404
 
-    containers = Container.query.filter_by(user_id=user_id).all()
-    container_list = [{'id': container.id, 'name': container.name, 'latitude': container.latitude, 'longitude': container.longitude, 'length': container.length, 'latest_distance':container.latest_distance} for container in containers]
+    # Ensure exact match by wrapping `user_id` with commas for matching
+    user_id_str = f",{user_id},"
+    containers = Container.query.filter(Container.user_ids.like(f"%{user_id_str}%")).all()
+    container_list = [{'id': container.id, 'name': container.name, 'latitude': container.latitude, 'longitude': container.longitude,
+                       'length': container.length, 'latest_distance': container.latest_distance} for container in containers]
 
     return jsonify(container_list)
 
@@ -357,6 +357,25 @@ def update_container_location(container_id):
     db.session.commit()
 
     return jsonify({'message': 'Container location updated successfully'}), 200
+
+
+@app.route('/update-container-user-ids/<int:container_id>', methods=['PUT'])
+def update_container_user_ids(container_id):
+    container = Container.query.get(container_id)
+    if not container:
+        return jsonify({'error': 'Container not found'}), 404
+
+    data = request.get_json()
+    user_ids = data.get('user_ids')
+
+    if not user_ids:
+        return jsonify({'error': 'User IDs must be provided'}), 400
+
+    # Ensure user_ids is formatted with leading and trailing commas
+    container.user_ids = f",{user_ids.strip()},"
+    db.session.commit()
+
+    return jsonify({'message': 'Container user IDs updated successfully'}), 200
 
 
 @app.route('/clean-data/<int:user_id>', methods=['DELETE'])

@@ -183,7 +183,7 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
 
 
         ApiService apiService = retrofit.create(ApiService.class);
-        Call<List<Container>> call = apiService.getUserContainers(parseInt(id)); // Hardcoded user_id for now
+        Call<List<Container>> call = apiService.getUserContainers(parseInt(id));
 
         call.enqueue(new Callback<List<Container>>() {
             @Override
@@ -228,6 +228,17 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
                 builder.include(marker.getPosition());
             }
             LatLngBounds bounds = builder.build();
+
+            if (markers.size() == 1) {
+                // Add buffer around a single marker to avoid a too-close zoom
+                double bufferDistance = 0.05;
+                LatLng singleMarker = markers.get(0).getPosition();
+                bounds = new LatLngBounds(
+                        new LatLng(singleMarker.latitude - bufferDistance, singleMarker.longitude - bufferDistance),
+                        new LatLng(singleMarker.latitude + bufferDistance, singleMarker.longitude + bufferDistance)
+                );
+            }
+
             CameraUpdate cu = CameraUpdateFactory.newLatLngBounds(bounds, 300);
             mMap.animateCamera(cu);
         }
