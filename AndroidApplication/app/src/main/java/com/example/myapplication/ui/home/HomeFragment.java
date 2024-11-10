@@ -11,10 +11,13 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 
+import android.content.pm.PackageManager;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 
@@ -33,10 +36,13 @@ import android.widget.PopupWindow;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
+import androidx.work.ExistingPeriodicWorkPolicy;
 import androidx.work.PeriodicWorkRequest;
 import androidx.work.WorkManager;
 
+import android.Manifest;
 import com.example.myapplication.R;
 import com.example.myapplication.databinding.FragmentHomeBinding;
 import com.github.mikephil.charting.components.LimitLine;
@@ -66,6 +72,7 @@ import java.util.HashMap;
 import java.util.List;
 
 import android.content.SharedPreferences;
+import android.widget.Toast;
 
 import okhttp3.OkHttpClient;
 
@@ -115,6 +122,9 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
     private static final String CHANNEL_ID = "container_notifications";
     private static final int NOTIFICATION_ID = 1;
 
+
+
+
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.fragment_home, container, false);
@@ -127,18 +137,85 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
         mapFragment.getMapAsync(this);
 
 
-        // Schedule WorkManager to check container fullness every 1 minutes
-        PeriodicWorkRequest fullnessCheckRequest = new PeriodicWorkRequest.Builder(ContainerCheckWorker.class, 1, TimeUnit.MINUTES)
+        // Schedule WorkManager to check container fullness every 15 minutes
+        PeriodicWorkRequest fullnessCheckRequest = new PeriodicWorkRequest.Builder(ContainerCheckWorker.class, 15, TimeUnit.SECONDS)
                 .build();
 
-        WorkManager.getInstance(getContext()).enqueue(fullnessCheckRequest);
+        WorkManager.getInstance(getContext()).enqueueUniquePeriodicWork(
+                "containerCheckWork",
+                ExistingPeriodicWorkPolicy.KEEP,
+                fullnessCheckRequest);
 
         fetchContainerData();
 
-       // createNotificationChannel();
+        createNotificationChannel();
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(requireContext(), CHANNEL_ID)
+                .setSmallIcon(R.mipmap.ic_launcher_round)
+                .setContentTitle("some")
+                .setContentText("some")
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT);
+
+
+
 
         return rootView;
     }
+
+    private final ActivityResultLauncher<String> requestPermissionLauncher =
+            registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
+                if (!isGranted) {
+                    // Notify the user that permission is required
+                    Toast.makeText(getContext(), "Notification permission is required for alerts.", Toast.LENGTH_SHORT).show();
+                }
+            });
+
+
+    private void createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationManager notificationManager = getContext().getSystemService(NotificationManager.class);
+            if (notificationManager != null && notificationManager.getNotificationChannel(CHANNEL_ID) == null) {
+                CharSequence name = "Container Notifications";
+                String description = "Notifications for container fullness";
+                int importance = NotificationManager.IMPORTANCE_HIGH;
+                NotificationChannel channel = new NotificationChannel(CHANNEL_ID, name, importance);
+                channel.setDescription(description);
+                notificationManager.createNotificationChannel(channel);
+            }
+        }
+
+        // Check for notification permission on Android 13+ (TIRAMISU)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                ContextCompat.checkSelfPermission(getContext(), Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            // Request the permission
+            requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS);
+        }
+    }
+
+
+//    private void sendNotification(String message) {
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+//                ContextCompat.checkSelfPermission(getContext(), Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+//            return; // Exit if permission is not granted
+//        }
+//
+//        Intent intent = new Intent(getContext(), getActivity().getClass());
+//        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+//        PendingIntent pendingIntent = PendingIntent.getActivity(getContext(), 0, intent, PendingIntent.FLAG_IMMUTABLE);
+//
+//        NotificationCompat.Builder builder = new NotificationCompat.Builder(getContext(), CHANNEL_ID)
+//                .setSmallIcon(R.drawable.red)
+//                .setContentTitle("Контейнер майже заповнився")
+//                .setContentText(message)
+//                .setPriority(NotificationCompat.PRIORITY_HIGH)
+//                .setContentIntent(pendingIntent)
+//                .setAutoCancel(true);
+//
+//        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(getContext());
+//        notificationManager.notify(NOTIFICATION_ID, builder.build());
+//    }
+
+
 
     @Override
     public void onDestroyView() {
@@ -216,7 +293,10 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
         // Add new markers
         for (Container container : containerList) {
             LatLng latLng = new LatLng(container.getLatitude(), container.getLongitude());
-            Marker marker = mMap.addMarker(new MarkerOptions().position(latLng).title(container.getName()).snippet("ID: " + container.getId() + ",Length: " + container.getLength() + ",LatestDistance: " + container.getLatestDistance()));
+            Marker marker = mMap.addMarker(new MarkerOptions()
+                    .position(latLng)
+                    .title(container.getName())
+                    .snippet("ID: " + container.getId() + ",Length: " + container.getLength() + ",LatestDistance: " + container.getLatestDistance()));
             setMarkerColor(marker, container.getLatestDistance(), container.getLength());
             markers.add(marker);
         }
@@ -254,11 +334,6 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
         } else {
             iconResource = R.drawable.red;
 
-            // Check notification setting and send notification
-
-           // if (isNotificationsEnabled(getContext())) {
-           //     sendNotification("Контейнер  " + marker.getTitle() + " є на " + (int)fullness + "% заповнений");
-           // }
         }
 
         Bitmap originalBitmap = BitmapFactory.decodeResource(getResources(), iconResource);
@@ -268,48 +343,9 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
         marker.setIcon(BitmapDescriptorFactory.fromBitmap(resizedBitmap));
     }
 
-    private boolean isNotificationsEnabled(Context context) {
-        SharedPreferences sharedPreferences = context.getSharedPreferences("Settings", MODE_PRIVATE);
-        return sharedPreferences.getBoolean("notifications_enabled", false);
-
-    }
 
 
 
-    private void sendNotification(String message) {
-        Intent intent = new Intent(getContext(), getActivity().getClass());
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        // Replace your PendingIntent creation code with this
-        PendingIntent pendingIntent = PendingIntent.getActivity(getContext(), 0, intent, PendingIntent.FLAG_IMMUTABLE);
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(getContext(), CHANNEL_ID)
-                .setSmallIcon(R.drawable.red)
-                .setContentTitle("Контейнер майже заповнився")
-                .setContentText(message)
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setContentIntent(pendingIntent)
-                .setAutoCancel(true);
-
-        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(getContext());
-        notificationManager.notify(NOTIFICATION_ID, builder.build());
-
-    }
-
-
-
-    private void createNotificationChannel() {
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            CharSequence name = "Container Notifications";
-            String description = "Notifications for container fullness";
-            int importance = NotificationManager.IMPORTANCE_HIGH;
-            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, name, importance);
-            channel.setDescription(description);
-            NotificationManager notificationManager = getContext().getSystemService(NotificationManager.class);
-            notificationManager.createNotificationChannel(channel);
-
-        }
-
-    }
 
 
     @Override
