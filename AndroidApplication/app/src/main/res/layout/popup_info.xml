@@ -111,6 +111,55 @@
                 android:textColor="@android:color/black" />
         </TableRow>
 
+
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:padding="8dp"
+                android:text="Середня швидкість заповнення"
+                android:textSize="18sp"
+                android:textColor="@android:color/black" />
+
+            <TextView
+                android:id="@+id/average_fill_rate"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:padding="8dp"
+                android:textSize="18sp"
+                android:textColor="@android:color/black" />
+        </TableRow>
+
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:padding="8dp"
+                android:text="Наступна прогнозована дата заповнення"
+                android:textSize="18sp"
+                android:textColor="@android:color/black" />
+
+            <TextView
+                android:id="@+id/next_predicted_date"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:padding="8dp"
+                android:textSize="18sp"
+                android:textColor="@android:color/black" />
+        </TableRow>
+
         <!-- Add more rows as needed -->
 
     </TableLayout>

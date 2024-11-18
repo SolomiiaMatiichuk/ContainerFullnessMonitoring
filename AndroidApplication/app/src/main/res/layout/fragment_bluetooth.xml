@@ -65,7 +65,7 @@
         android:id="@+id/send_user_id"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Надіслати ID користувача"
+        android:text="Надати доступ користувачам"
         android:backgroundTint="#44443c"
         android:enabled="false"
         android:visibility="gone"/>

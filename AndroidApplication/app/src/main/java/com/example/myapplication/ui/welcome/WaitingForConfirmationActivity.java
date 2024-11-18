@@ -30,7 +30,7 @@ public class WaitingForConfirmationActivity extends AppCompatActivity {
         email = getIntent().getStringExtra("email");
 
         TextView statusText = findViewById(R.id.statusText);
-        statusText.setText("Будь ласка, перевірте ваш емейл і підтвердьте реєстрацію. Після цього ви зможете ввійти в профіль.");
+        statusText.setText("Будь ласка, перевірте вашу електронну пошту і підтвердьте реєстрацію. Після цього ви зможете ввійти в профіль.");
 
         // Start polling
         handler.postDelayed(checkConfirmationStatus, POLL_INTERVAL);

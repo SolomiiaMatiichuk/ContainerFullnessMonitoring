@@ -450,7 +450,7 @@ public class BluetoothFragment extends Fragment implements AdapterView.OnItemCli
 
     private void showWifiPopup() {
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
-        builder.setTitle("Введіть креденшали Wi-Fi");
+        builder.setTitle("Введіть облікові дані Wi-Fi");
 
         View viewInflated = LayoutInflater.from(getContext()).inflate(R.layout.popup_wifi, (ViewGroup) getView(), false);
 

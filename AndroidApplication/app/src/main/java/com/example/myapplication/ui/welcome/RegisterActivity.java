@@ -50,7 +50,7 @@ public class RegisterActivity extends AppCompatActivity {
                         @Override
                         public void onResponse(Call<Void> call, Response<Void> response) {
                             if (response.isSuccessful()) {
-                                Toast.makeText(RegisterActivity.this, "Реєстрація успішна. Підтвердіть, будь ласка, емейл, відкривши надісланий лист", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(RegisterActivity.this, "Реєстрація успішна. Підтвердіть, будь ласка, вашу електронну пошту, відкривши надісланий лист", Toast.LENGTH_SHORT).show();
                                 // Navigate to WaitingForConfirmationActivity
                                 Intent intent = new Intent(RegisterActivity.this, WaitingForConfirmationActivity.class);
                                 intent.putExtra("email", email);
