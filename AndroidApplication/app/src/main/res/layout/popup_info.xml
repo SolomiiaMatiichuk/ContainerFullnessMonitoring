@@ -1,167 +1,52 @@
-<?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="20dp">
+    android:padding="16dp">
 
-    <TableLayout
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="300dp"
+        android:background="#FFFFFF"
+        android:scrollbars="vertical">
+
+        <TableLayout
+            android:id="@+id/container_details_table"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="#FFFFFF"
+            android:stretchColumns="1">
+
+            <!-- Column headers -->
+            <TableRow
+                android:background="#D3D3D3">
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:padding="8dp"
+                    android:text="Параметр"
+                    android:textStyle="bold"
+                    android:textColor="#000000" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:padding="8dp"
+                    android:text="Значення"
+                    android:textStyle="bold"
+                    android:textColor="#000000" />
+            </TableRow>
+        </TableLayout>
+    </ScrollView>
+
+    <Button
+        android:id="@+id/btnTrends"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:stretchColumns="1"
-        android:background="@android:color/white"
-        android:padding="16dp"
-        android:layout_marginBottom="16dp"
-        android:showDividers="middle"
-        android:divider="@drawable/table_divider">
-
-        <TableRow
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:padding="8dp"
-                android:text="ID контейнера"
-                android:textSize="18sp"
-                android:textColor="@android:color/black" />
-
-            <TextView
-                android:id="@+id/text_id"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:padding="8dp"
-                android:textSize="18sp"
-                android:textColor="@android:color/black" />
-        </TableRow>
-
-        <TableRow
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:padding="8dp"
-                android:text="Довжина контейнера"
-                android:textSize="18sp"
-                android:textColor="@android:color/black" />
-
-            <TextView
-                android:id="@+id/text_length"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:padding="8dp"
-                android:textSize="18sp"
-                android:textColor="@android:color/black" />
-        </TableRow>
-
-        <TableRow
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:padding="8dp"
-                android:text="Поточна заповненість "
-                android:textSize="18sp"
-                android:textColor="@android:color/black" />
-
-            <TextView
-                android:id="@+id/fullness_info"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:padding="8dp"
-                android:textSize="18sp"
-                android:textColor="@android:color/black" />
-        </TableRow>
-
-        <TableRow
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:padding="8dp"
-                android:text="Дата останнього очищення"
-                android:textSize="18sp"
-                android:textColor="@android:color/black" />
-
-            <TextView
-                android:id="@+id/text_last_date"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:padding="8dp"
-                android:textSize="18sp"
-                android:textColor="@android:color/black" />
-        </TableRow>
-
-
-        <TableRow
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:padding="8dp"
-                android:text="Середня швидкість заповнення"
-                android:textSize="18sp"
-                android:textColor="@android:color/black" />
-
-            <TextView
-                android:id="@+id/average_fill_rate"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:padding="8dp"
-                android:textSize="18sp"
-                android:textColor="@android:color/black" />
-        </TableRow>
-
-        <TableRow
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:padding="8dp"
-                android:text="Наступна прогнозована дата заповнення"
-                android:textSize="18sp"
-                android:textColor="@android:color/black" />
-
-            <TextView
-                android:id="@+id/next_predicted_date"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:padding="8dp"
-                android:textSize="18sp"
-                android:textColor="@android:color/black" />
-        </TableRow>
-
-        <!-- Add more rows as needed -->
-
-    </TableLayout>
-
+        android:text="Статистика між періодами"
+        android:layout_marginTop="16dp"
+        android:padding="8dp" />
 </LinearLayout>

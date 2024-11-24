@@ -5,6 +5,7 @@ import static android.content.Context.MODE_PRIVATE;
 import static java.lang.Integer.parseInt;
 
 import android.app.AlertDialog;
+import android.app.DatePickerDialog;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -31,8 +32,13 @@ import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.PopupWindow;
+import android.widget.Spinner;
+import android.widget.TableLayout;
+import android.widget.TableRow;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -63,6 +69,7 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
@@ -88,6 +95,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 
+import java.util.Locale;
 import java.util.Map;
 
 import com.github.mikephil.charting.charts.LineChart;
@@ -98,6 +106,7 @@ import com.github.mikephil.charting.data.LineDataSet;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 
 public class HomeFragment extends Fragment implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener{
@@ -122,7 +131,7 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
     private static final String CHANNEL_ID = "container_notifications";
     private static final int NOTIFICATION_ID = 1;
 
-
+    private List<Fullness> fullnessDataList;
 
 
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -326,7 +335,7 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
 
     private void setMarkerColor(Marker marker, double current_distance, double length) {
         int iconResource;
-        double fullness = ((length - current_distance)/length)*100.0;
+        double fullness =calculatePercentage(current_distance,length);
         if (fullness < 50) {
             iconResource = R.drawable.green;
         } else if (fullness >= 50 && fullness < 80) {
@@ -355,21 +364,296 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
         showPopupWindow(marker);
         return false;
     }
+    private double calculatePercentage(double fullness, double containerLength) {
+        double percentage = ((containerLength - fullness) / containerLength) * 100.0;
+        return Math.max(percentage, 0); // Ensure no negative percentages
+    }
+
+
+
+    private void showTrendsPopup(List<Fullness> fullnessDataList, double containerLength) {
+        AlertDialog.Builder alert = new AlertDialog.Builder(requireContext());
+        alert.setTitle("Статистика між періодами");
+
+        View customLayout = LayoutInflater.from(requireContext()).inflate(R.layout.popup_trends, null);
+        TableLayout trendsTable = customLayout.findViewById(R.id.trends_table);
+        Spinner startDateSpinner = customLayout.findViewById(R.id.start_date_spinner);
+        Spinner endDateSpinner = customLayout.findViewById(R.id.end_date_spinner);
+
+        // Extract and sort unique dates
+        List<String> dateOptions = extractUniqueDates(fullnessDataList); // Sorted in ascending order
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_item, dateOptions);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        startDateSpinner.setAdapter(adapter);
+        endDateSpinner.setAdapter(adapter);
+
+        // Set default selections
+        startDateSpinner.setSelection(0); // Earliest date
+        endDateSpinner.setSelection(dateOptions.size() - 1); // Latest date
+
+        // Add listener to spinners to update the table when dates are changed
+        AdapterView.OnItemSelectedListener dateChangeListener = new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                String startDateStr = (String) startDateSpinner.getSelectedItem();
+                String endDateStr = (String) endDateSpinner.getSelectedItem();
+
+                if (startDateStr != null && endDateStr != null) {
+                    Date startDate = parseDate(startDateStr);
+                    Date endDate = parseDate(endDateStr);
+
+                    if (startDate != null && endDate != null && !startDate.after(endDate)) {
+                        updateTrendsTable(trendsTable, filterDataByDateRange(fullnessDataList, startDate, endDate), containerLength);
+                    }
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {}
+        };
+
+        startDateSpinner.setOnItemSelectedListener(dateChangeListener);
+        endDateSpinner.setOnItemSelectedListener(dateChangeListener);
+
+        // Initialize table with full data
+        updateTrendsTable(trendsTable, filterDataByDateRange(fullnessDataList, parseDate(dateOptions.get(0)), parseDate(dateOptions.get(dateOptions.size() - 1))), containerLength);
+
+        alert.setView(customLayout);
+        alert.setPositiveButton("OK", null);
+        alert.show();
+    }
+
+    // Extract unique and sorted dates from Fullness data
+    // Extract unique and sorted dates from Fullness data
+    private List<String> extractUniqueDates(List<Fullness> fullnessDataList) {
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
+        TreeSet<Date> uniqueDates = new TreeSet<>();
+
+        for (Fullness data : fullnessDataList) {
+            // Truncate time part to ensure uniqueness by date only
+            uniqueDates.add(truncateToDate(data.getTimestamp()));
+        }
+
+        // Convert sorted dates back to string format
+        List<String> sortedDates = new ArrayList<>();
+        for (Date date : uniqueDates) {
+            sortedDates.add(dateFormat.format(date));
+        }
+
+        return sortedDates;
+    }
+
+    // Helper method to truncate a Date object to just the date part
+    private Date truncateToDate(Date date) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        calendar.set(Calendar.HOUR_OF_DAY, 0);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        calendar.set(Calendar.MILLISECOND, 0);
+        return calendar.getTime();
+    }
+
+
+    // Parse string date to Date object
+    private Date parseDate(String dateStr) {
+        try {
+            return new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).parse(dateStr);
+        } catch (ParseException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    // Filter Fullness data by date range
+    private List<Fullness> filterDataByDateRange(List<Fullness> fullnessDataList, Date startDate, Date endDate) {
+        // Truncate startDate and endDate to remove time components
+        Date truncatedStartDate = truncateToDate(startDate);
+        Date truncatedEndDate = truncateToDate(endDate);
+
+        List<Fullness> filteredData = new ArrayList<>();
+        for (Fullness data : fullnessDataList) {
+            // Truncate timestamp to remove time components
+            Date truncatedTimestamp = truncateToDate(data.getTimestamp());
+
+            // Check if timestamp is within the inclusive range
+            if (!truncatedTimestamp.before(truncatedStartDate) && !truncatedTimestamp.after(truncatedEndDate)) {
+                filteredData.add(data);
+            }
+        }
+
+        return filteredData;
+    }
+
+    // Update trends table dynamically
+    private void updateTrendsTable(TableLayout trendsTable, List<Fullness> filteredData, double containerLength) {
+        // Clear existing rows except header
+        trendsTable.removeViews(1, trendsTable.getChildCount() - 1);
+
+        // Add trend rows
+        addTableRow(trendsTable, "Середнє заповнення за період",
+                String.format("%.1f", calculateAverageFullness(filteredData, containerLength)) + "%");
+        addTableRow(trendsTable, "Кількість очищень за період",
+                      String.format("%d", countOfClean(filteredData, containerLength)));
+        addTableRow(trendsTable, "Кількість переповнень за період",
+                String.format("%d", countOverflows(filteredData, containerLength)));
+        addTableRow(trendsTable, "Максимальне заповнення",
+                String.format("%.1f", calculateMaxFullness(filteredData, containerLength)) + "%");
+        addTableRow(trendsTable, "Мінімальне заповнення",
+                String.format("%.1f", calculateMinFullness(filteredData, containerLength)) + "%");
+    }
+
+    private int countOverflows(List<Fullness> filteredData, double containerLength) {
+        int overflowCount = 0;
+        boolean wasBelowThreshold = false;
+
+        for (Fullness data : filteredData) {
+            // Calculate the fullness percentage
+            double percentage = ((containerLength - data.getFullness()) / containerLength) * 100.0;
+
+            // Check for transition from <90% to >90%
+            if (percentage < 90) {
+                wasBelowThreshold = true; // Set the flag if fullness is below 90%
+            } else if (wasBelowThreshold && percentage > 90) {
+                overflowCount++; // Count an overflow
+                wasBelowThreshold = false; // Reset the flag after an overflow
+            }
+        }
+
+        return overflowCount;
+    }
+
+
+    private int countOfClean(List<Fullness> filteredData, double containerLength) {
+        int cleanCount = 0;
+        boolean wasAboveThreshold = false;
+
+        for (Fullness data : filteredData) {
+            double percentage = calculatePercentage(data.getFullness(), containerLength);
+            if (percentage > 15) {
+                wasAboveThreshold = true;
+            } else if (wasAboveThreshold && percentage < 10) {
+                cleanCount++;
+                wasAboveThreshold = false;
+            }
+        }
+
+        return cleanCount;
+    }
+
+
+
+
+    // Helper function to add rows to the table
+    private void addTableRow(TableLayout tableLayout, String label, String value) {
+        TableRow row = new TableRow(getContext());
+        row.setBackgroundResource(R.drawable.item_border); // Apply border drawable to each row
+
+        TextView labelView = new TextView(getContext());
+        labelView.setText(label);
+        labelView.setPadding(8, 8, 8, 8);
+        labelView.setTextSize(14);
+        labelView.setTextColor(Color.BLACK);
+        labelView.setSingleLine(false); // Allow multi-line wrapping
+        labelView.setEllipsize(null); // Prevent truncation
+        labelView.setLayoutParams(new TableRow.LayoutParams(
+                0, TableRow.LayoutParams.WRAP_CONTENT, 1f)); // Use layout weight for even column distribution
+
+        TextView valueView = new TextView(getContext());
+        valueView.setText(value);
+        valueView.setPadding(8, 8, 8, 8);
+        valueView.setTextSize(14);
+        valueView.setTextColor(Color.BLACK);
+        valueView.setLayoutParams(new TableRow.LayoutParams(
+                0, TableRow.LayoutParams.WRAP_CONTENT, 1f)); // Use layout weight for even column distribution
+
+        row.addView(labelView);
+        row.addView(valueView);
+
+        tableLayout.addView(row);
+    }
+
+
+
+
+
+    // Function to calculate average fullness
+    private double calculateAverageFullness(List<Fullness> fullnessDataList, double containerLength) {
+        double total = 0;
+        for (Fullness data : fullnessDataList) {
+            total += calculatePercentage(data.getFullness(),containerLength);
+        }
+        return fullnessDataList.isEmpty() ? 0 : total / fullnessDataList.size();
+    }
+
+    // Function to calculate maximum fullness
+    private double calculateMaxFullness(List<Fullness> fullnessDataList, double containerLength) {
+        double max = 0;
+        for (Fullness data : fullnessDataList) {
+            double fullness = calculatePercentage(data.getFullness(),containerLength);
+            if (fullness > max) {
+                max = fullness;
+            }
+        }
+        return max;
+    }
+
+    // Function to calculate minimum fullness
+    private double calculateMinFullness(List<Fullness> fullnessDataList, double containerLength) {
+        double min = 100;
+        for (Fullness data : fullnessDataList) {
+            double fullness = calculatePercentage(data.getFullness(),containerLength);
+            if (fullness < min) {
+                min = fullness;
+            }
+        }
+        return min;
+    }
+
+
 
     private void showInfoPopup(int containerId, double containerLength, double latestDistance) {
         LayoutInflater inflater = getLayoutInflater();
         View alertLayout = inflater.inflate(R.layout.popup_info, null);
 
-        TextView textId = alertLayout.findViewById(R.id.text_id);
-        TextView textFullness = alertLayout.findViewById(R.id.fullness_info);
-        TextView textLength = alertLayout.findViewById(R.id.text_length);
-        TextView textLastDate = alertLayout.findViewById(R.id.text_last_date);
+        TableLayout containerDetailsTable = alertLayout.findViewById(R.id.container_details_table);
+        Button btnTrends = alertLayout.findViewById(R.id.btnTrends);
 
-        // Set your data here
-        textId.setText(Integer.toString(containerId));
-        textLength.setText(Double.toString(containerLength));
-        textFullness.setText(String.format("%.1f",((containerLength - latestDistance)/containerLength) *100.0) + "%");
-        textLastDate.setText("26.05.2024"); //currently test data
+        if (fullnessDataList != null && !fullnessDataList.isEmpty()) {
+            Fullness latestFullness = Collections.max(fullnessDataList, Comparator.comparing(Fullness::getTimestamp));
+            double lastFullnessPercentage = ((containerLength - latestFullness.getFullness()) / containerLength) * 100.0;
+
+            String lastCleaningDateTime = findLastCleaningDateTime(fullnessDataList, containerLength);
+
+            Date latestDate = latestFullness.getTimestamp();
+
+            // Calculate average filling rate excluding cleaning
+            double averageFillingRate = calculateAverageFillRateExcludingCleaning(fullnessDataList, containerLength);
+
+            // Populate the table with details
+            populateContainerDetailsTable(
+                    containerDetailsTable,
+                    containerId,
+                    containerLength,
+                    Math.max(lastFullnessPercentage, 0),
+                    new SimpleDateFormat("dd.MM.yyyy HH:mm").format(latestDate),
+                    lastCleaningDateTime.isEmpty() ? "Немає даних" : lastCleaningDateTime,
+                    averageFillingRate
+            );
+        } else {
+            // Populate with "no data" messages
+            populateContainerDetailsTable(
+                    containerDetailsTable,
+                    containerId,
+                    containerLength,
+                    -1, // No fullness available
+                    "Немає даних",
+                    "Немає даних",
+                    0 // No average rate available
+            );
+        }
+
+        btnTrends.setOnClickListener(v -> showTrendsPopup(fullnessDataList, containerLength));
 
         AlertDialog.Builder alert = new AlertDialog.Builder(getContext());
         alert.setTitle("Інформація про контейнер");
@@ -378,6 +662,81 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
         AlertDialog dialog = alert.create();
         dialog.show();
     }
+
+    // Helper method to populate the table
+    private void populateContainerDetailsTable(TableLayout tableLayout, int containerId, double containerLength, double fullnessPercentage, String lastUpdate, String lastCleaningDateTime, double averageFillingRate) {
+        tableLayout.removeAllViews();
+
+        addTableRow(tableLayout, "ID контейнера", String.valueOf(containerId));
+        addTableRow(tableLayout, "Довжина контейнера", containerLength + " см");
+        if (fullnessPercentage >= 0) {
+            addTableRow(tableLayout, "Заповненість", String.format("%.1f%%", fullnessPercentage));
+        } else {
+            addTableRow(tableLayout, "Заповненість", "Немає даних");
+        }
+        addTableRow(tableLayout, "Дата та час останнього оновлення", lastUpdate);
+        addTableRow(tableLayout, "Дата та час останнього очищення", lastCleaningDateTime);
+        addTableRow(tableLayout, "Середня швидкість заповнення", String.format("%.2f%%/год", averageFillingRate));
+    }
+
+    // Helper method to calculate average filling rate excluding cleaning
+    private double calculateAverageFillRateExcludingCleaning(List<Fullness> data, double containerLength) {
+        if (data.size() < 2) {
+            return 0; // Не вистачає даних для розрахунку
+        }
+
+        double totalFillChange = 0; // Сумарна зміна заповнення
+        double totalTimeHours = 0; // Сумарний часовий інтервал (у годинах)
+        boolean wasFilling = false;
+
+        for (int i = 1; i < data.size(); i++) {
+            Fullness previous = data.get(i - 1);
+            Fullness current = data.get(i);
+
+            // Обчислюємо рівень заповнення у відсотках
+            double previousPercentage = ((containerLength - previous.getFullness()) / containerLength) * 100.0;
+            double currentPercentage = ((containerLength - current.getFullness()) / containerLength) * 100.0;
+
+            // Check if it's a filling event
+            if (currentPercentage > previousPercentage) {
+                wasFilling = true;
+                totalFillChange += currentPercentage - previousPercentage;
+
+                // Додаємо часовий інтервал у годинах
+                long timeDiffMillis = current.getTimestamp().getTime() - previous.getTimestamp().getTime();
+                totalTimeHours += timeDiffMillis / (1000.0 * 60 * 60); // Перетворюємо мілісекунди у години
+            } else {
+                wasFilling = false; // Ignore if it's a cleaning event
+            }
+        }
+
+        // Розраховуємо середню швидкість заповнення
+        return totalTimeHours > 0 ? totalFillChange / totalTimeHours : 0;
+    }
+
+
+
+
+    private String findLastCleaningDateTime(List<Fullness> fullnessDataList, double containerLength) {
+        SimpleDateFormat dateTimeFormat = new SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault());
+        boolean wasAboveThreshold = false; // Flag to track if fullness was above 15%
+
+        // Iterate through the list in reverse to find the most recent cleaning
+        for (int i = fullnessDataList.size() - 1; i >= 0; i--) {
+            Fullness data = fullnessDataList.get(i);
+            double percentage = ((containerLength - data.getFullness()) / containerLength) * 100.0;
+
+            if (percentage > 15) {
+                wasAboveThreshold = true;
+            } else if (wasAboveThreshold && percentage < 10) {
+                return dateTimeFormat.format(data.getTimestamp()); // Return the cleaning date and time
+            }
+        }
+
+        return ""; // No cleaning found
+    }
+
+
 
     private void showPopupWindow(Marker marker) {
         if (popupWindow != null && popupWindow.isShowing()) {
@@ -442,9 +801,10 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
             @Override
             public void onResponse(@NotNull Call<List<Fullness>> call, @NotNull Response<List<Fullness>> response) {
                 if (response.isSuccessful()) {
-                    List<Fullness> fullnessDataList = response.body();
+                    fullnessDataList = response.body();
+                    Collections.sort(fullnessDataList, (data1, data2) -> data1.getTimestamp().compareTo(data2.getTimestamp()));
                     if (fullnessDataList != null) {
-                        displayFullnessPlot(fullnessDataList, containerLength);
+                        displayFullnessPlot(containerLength);
                     }
                 }
             }
@@ -468,7 +828,7 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
         return calendar.getTime();
     }
 
-    private void displayFullnessPlot(List<Fullness> fullnessDataList, double containerLength) {
+    private void displayFullnessPlot(double containerLength) {
         // Set up chart visibility and background color
         chart.setVisibility(View.VISIBLE);
         chart.setBackgroundColor(Color.WHITE);
@@ -527,7 +887,7 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
 
                 // Add the current time entry with the last fullness value
                 if (!filteredData.isEmpty()) {
-                    Fullness lastFullness = filteredData.get(0);
+                    Fullness lastFullness = filteredData.get(filteredData.size() - 1);
                     Calendar calendar = Calendar.getInstance();
                     long currentMinutes = calendar.get(Calendar.HOUR_OF_DAY) * 60 + calendar.get(Calendar.MINUTE);
                     float lastFullnessPercentage = (float) (((current_container_length - lastFullness.getFullness()) / current_container_length) * 100.0);
