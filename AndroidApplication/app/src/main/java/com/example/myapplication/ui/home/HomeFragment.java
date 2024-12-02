@@ -579,11 +579,32 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
 
     // Function to calculate average fullness
     private double calculateAverageFullness(List<Fullness> fullnessDataList, double containerLength) {
-        double total = 0;
-        for (Fullness data : fullnessDataList) {
-            total += calculatePercentage(data.getFullness(),containerLength);
+        if (fullnessDataList.isEmpty()) {
+            return 0; // Avoid division by zero
         }
-        return fullnessDataList.isEmpty() ? 0 : total / fullnessDataList.size();
+
+        double weightedSum = 0;
+        double totalTime = 0;
+
+        for (int i = 0; i < fullnessDataList.size() - 1; i++) {
+            Fullness current = fullnessDataList.get(i);
+            Fullness next = fullnessDataList.get(i + 1);
+
+            // Calculate fullness percentage for the current data point
+            double currentPercentage = calculatePercentage(current.getFullness(), containerLength);
+
+            // Calculate the time difference between two points
+            double timeInterval = next.getTimestamp().getTime() - current.getTimestamp().getTime();
+
+            // Add weighted fullness to the total
+            weightedSum += currentPercentage * timeInterval;
+
+            // Accumulate total time
+            totalTime += timeInterval;
+        }
+
+        // Return the weighted average fullness
+        return totalTime == 0 ? 0 : weightedSum / totalTime;
     }
 
     // Function to calculate maximum fullness
